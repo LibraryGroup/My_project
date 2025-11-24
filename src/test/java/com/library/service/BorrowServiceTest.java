@@ -77,4 +77,30 @@ class BorrowServiceTest {
         assertTrue(overdue.get(0).isOverdue(overdueDate));
         assertSame(record, overdue.get(0));
     }
+    @Test
+    void cannotBorrowIfUserHasOverdueBooks() {
+
+        User user = new User("mohammad", 0.0);
+
+        Book overdueBook = new Book(10, "Old Book", "Author", "999");
+        bookRepository.add(overdueBook);
+
+        BorrowRecord oldRecord = new BorrowRecord(
+                user,
+                overdueBook,
+                LocalDate.of(2025, 1, 1),
+                LocalDate.of(2025, 1, 10)
+        );
+        oldRecord.setReturned(false);
+
+        // نضيف السجل المتأخر باستخدام الميثود الجديدة
+        borrowService._testGetRecords(user.getUsername()).add(oldRecord);
+
+        // التوقع: يجب أن يمنع الاستعارة
+        assertThrows(IllegalStateException.class,
+                () -> borrowService.borrowBook(user, "111", LocalDate.of(2025, 2, 15))
+        );
+    }
+
+
 }

@@ -49,4 +49,14 @@ public class FileUserRepository implements UserRepository {
     public User findByUsername(String username) {
         return users.get(username);
     }
+    @Override
+    public void save(User user) {
+        users.put(user.getUsername(), user);
+    }
+
+    @Override
+    public boolean deleteUser(String username) {
+        return users.remove(username) != null;
+    }
+
 }
