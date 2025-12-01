@@ -36,38 +36,30 @@ public class UserService {
         }
     }
 
-    // ======================================================
-    // Sprint 4 — Unregister user (Final Merged Logic)
-    // ======================================================
+    
     public boolean unregister(User admin, User targetUser, BorrowService borrowService) {
 
-        // -------------------------------
-        // Admin only
-        // -------------------------------
+        
         if (admin == null || !"admin".equals(admin.getUsername())) {
             throw new SecurityException("Only admin can unregister users");
         }
 
-        // Load fresh user from repository
+       
         User user = repository.findByUsername(targetUser.getUsername());
         if (user == null) return false;
 
-        // -------------------------------
-        // Cannot unregister if user has unpaid fines
-        // -------------------------------
+      
         if (user.getFineBalance() > 0) {
-            return false; // لديه غرامات غير مدفوعة
+            return false; 
         }
 
-        // -------------------------------
-        // Cannot unregister if user has active loans
-        // -------------------------------
+        
         List<BorrowRecord> loans = borrowService.getBorrowRecordsForUser(user);
 
         for (BorrowRecord r : loans) {
-            // Active loan = not returned
+           
             if (!r.isReturned()) {
-                return false;   // لديه إعارات فعّالة
+                return false;   
             }
 
             // Also: overdue check
@@ -76,9 +68,7 @@ public class UserService {
             }
         }
 
-        // -------------------------------
-        // Finally delete user
-        // -------------------------------
+      
         return repository.deleteUser(user.getUsername());
     }
 }

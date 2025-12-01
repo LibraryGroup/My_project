@@ -1,183 +1,178 @@
 package com.library.service;
 
-import com.library.model.Book;
 import com.library.model.BorrowRecord;
 import com.library.model.User;
 import com.library.repository.UserRepository;
-import com.library.repository.InMemoryBookRepository;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserServiceTest {
 
-    private UserService userService;
-
-    // Fake Repository يحتوي find + delete
-    private static class FakeUserRepository implements UserRepository {
-
-        boolean deleted = false;
-        User savedUser = null; // لمعرفة أنه تم حفظه
-        @Override
-        public User findByUsername(String username) {
-            if ("mohammad".equals(username)) {
-                return new User("mohammad", 0.0);
-            }
-            if ("ahmed".equals(username)) {
-                return new User("ahmed", 50.0);
-            }
-            if ("test".equals(username)) {
-                return new User("test", 0.0);
-            }
-            return null;
-        }
-        @Override
-        public void save(User user) {
-            this.savedUser = user;  // فقط نخزن النسخة بدون Database
-        }
-
-        @Override
-        public boolean deleteUser(String username) {
-            deleted = true;
-            return true;
-        }
-    }
-
-    @BeforeEach
-    void setUp() {
-        userService = new UserService(new FakeUserRepository());
-    }
-
-    // ===============================
-    // Sprint 1 + Sprint 2 Tests
-    // ===============================
-
+    
     @Test
-    void findUserMohammadShouldReturnUser() {
-        User user = userService.findUser("mohammad");
-        assertNotNull(user);
-        assertEquals("mohammad", user.getUsername());
+    void findUserReturnsCorrect() {
+        UserRepository repo = mock(UserRepository.class);
+        UserService service = new UserService(repo);
+
+        User expected = new User("mohammad", 0);
+        when(repo.findByUsername("mohammad")).thenReturn(expected);
+
+        User actual = service.findUser("mohammad");
+
+        assertEquals(expected, actual);
+        verify(repo, times(1)).findByUsername("mohammad");
+    }
+
+    
+    @Test
+    void userCanBorrowWhenNoFines() {
+        UserService service = new UserService(mock(UserRepository.class));
+
+        User user = new User("ali", 0.0);
+
+        assertTrue(service.canBorrow(user));
     }
 
     @Test
-    void findUserAhmedShouldReturnUser() {
-        User user = userService.findUser("ahmed");
-        assertNotNull(user);
-        assertEquals("ahmed", user.getUsername());
-        assertEquals(50.0, user.getFineBalance());
+    void userCannotBorrowWhenHasFines() {
+        UserService service = new UserService(mock(UserRepository.class));
+
+        User user = new User("ali", 50.0);
+
+        assertFalse(service.canBorrow(user));
+    }
+
+   
+    @Test
+    void payFineReducesBalance() {
+        UserService service = new UserService(mock(UserRepository.class));
+
+        User user = new User("ali", 30.0);
+
+        service.payFine(user, 10.0);
+
+        assertEquals(20.0, user.getFineBalance());
     }
 
     @Test
-    void findUnknownUserShouldReturnNull() {
-        User user = userService.findUser("xyz");
-        assertNull(user);
+    void payFineClearsBalanceIfAmountTooLarge() {
+        UserService service = new UserService(mock(UserRepository.class));
+
+        User user = new User("ali", 25.0);
+
+        service.payFine(user, 100.0);
+
+        assertEquals(0.0, user.getFineBalance());
     }
 
     @Test
-    void canBorrowWhenNoFine() {
-        User user = userService.findUser("mohammad");
-        assertTrue(userService.canBorrow(user));
-    }
+    void payFineRejectsZeroOrNegative() {
+        UserService service = new UserService(mock(UserRepository.class));
+        User user = new User("ali", 20.0);
 
-    @Test
-    void cannotBorrowWhenHasFine() {
-        User user = userService.findUser("ahmed");
-        assertFalse(userService.canBorrow(user));
-    }
-
-    @Test
-    void payFinePartialShouldReduceBalance() {
-        User user = userService.findUser("ahmed");
-        userService.payFine(user, 20.0);
-        assertEquals(30.0, user.getFineBalance(), 0.001);
-    }
-
-    @Test
-    void payFineFullShouldSetBalanceToZero() {
-        User user = userService.findUser("ahmed");
-        userService.payFine(user, 100.0);
-        assertEquals(0.0, user.getFineBalance(), 0.001);
-    }
-
-    @Test
-    void payFineWithNonPositiveAmountShouldThrow() {
-        User user = userService.findUser("mohammad");
         assertThrows(IllegalArgumentException.class,
-                () -> userService.payFine(user, 0.0));
+                () -> service.payFine(user, 0));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.payFine(user, -5));
     }
 
-    // ===============================
-    // Sprint 4 — Unregister Tests
-    // ===============================
-
+    
     @Test
-    void unregisterShouldFailIfNotAdmin() {
-        User normalUser = new User("mohammad", 0.0);
-        User target = new User("test", 0.0);
+    void unregisterFailsIfNotAdmin() {
+        UserRepository repo = mock(UserRepository.class);
+        BorrowService borrowService = mock(BorrowService.class);
 
-        BorrowService bs = new BorrowService(new InMemoryBookRepository());
+        UserService service = new UserService(repo);
+
+        User notAdmin = new User("someone", 0);
+        User target = new User("x", 0);
 
         assertThrows(SecurityException.class,
-                () -> userService.unregister(normalUser, target, bs));
+                () -> service.unregister(notAdmin, target, borrowService));
     }
 
     @Test
-    void unregisterShouldFailIfUserHasFine() {
-        User admin = new User("admin", 0.0);
-        User target = new User("ahmed", 50.0); // عنده غرامة
+    void unregisterFailsWhenUserHasFines() {
+        UserRepository repo = mock(UserRepository.class);
+        BorrowService borrowService = mock(BorrowService.class);
 
-        BorrowService bs = new BorrowService(new InMemoryBookRepository());
+        User target = new User("x", 20.0);
+        when(repo.findByUsername("x")).thenReturn(target);
 
-        assertThrows(IllegalStateException.class,
-                () -> userService.unregister(admin, target, bs));
+        UserService service = new UserService(repo);
+
+        User admin = new User("admin", 0);
+
+        assertFalse(service.unregister(admin, target, borrowService));
     }
 
     @Test
-    void unregisterShouldFailIfUserHasActiveLoans() {
-        User admin = new User("admin", 0.0);
-        User target = new User("test", 0.0);
+    void unregisterFailsWhenHasActiveLoans() {
+        UserRepository repo = mock(UserRepository.class);
+        BorrowService borrowService = mock(BorrowService.class);
 
-        InMemoryBookRepository bookRepo = new InMemoryBookRepository();
-        BorrowService bs = new BorrowService(bookRepo);
+        User target = new User("x", 0);
+        when(repo.findByUsername("x")).thenReturn(target);
 
-        // نضيف كتاب واستخدام استعارة فعالة
-        Book book = new Book(1, "X", "Y", "999");
-        bookRepo.add(book);
+        BorrowRecord active = mock(BorrowRecord.class);
+        when(active.isReturned()).thenReturn(false);
 
-        BorrowRecord r = new BorrowRecord(
-                target,
-                book,
-                LocalDate.now(),
-                LocalDate.now().plusDays(5)
-        );
+        when(borrowService.getBorrowRecordsForUser(target))
+                .thenReturn(List.of(active));
 
-        // نجعل السجل فعال (not returned)
-        r.setReturned(false);
+        UserService service = new UserService(repo);
 
-        // إضافة السجل إلى borrowService عبر test helper
-        bs._testGetRecords(target.getUsername()).add(r);
+        User admin = new User("admin", 0);
 
-        assertThrows(IllegalStateException.class,
-                () -> userService.unregister(admin, target, bs));
+        assertFalse(service.unregister(admin, target, borrowService));
     }
 
     @Test
-    void unregisterShouldSucceedForCleanUser() {
+    void unregisterFailsWhenOverdue() {
+        UserRepository repo = mock(UserRepository.class);
+        BorrowService borrowService = mock(BorrowService.class);
 
-        FakeUserRepository repo = new FakeUserRepository();
-        userService = new UserService(repo);
+        User target = new User("x", 0);
+        when(repo.findByUsername("x")).thenReturn(target);
 
-        User admin = new User("admin", 0.0);
-        User target = new User("test", 0.0);
+        BorrowRecord overdue = mock(BorrowRecord.class);
+        when(overdue.isReturned()).thenReturn(true);
+        when(overdue.isOverdue(any(LocalDate.class))).thenReturn(true);
 
-        BorrowService bs = new BorrowService(new InMemoryBookRepository());
+        when(borrowService.getBorrowRecordsForUser(target))
+                .thenReturn(List.of(overdue));
 
-        boolean result = userService.unregister(admin, target, bs);
+        UserService service = new UserService(repo);
+        User admin = new User("admin", 0);
 
-        assertTrue(result);
-        assertTrue(repo.deleted);
+        assertThrows(IllegalStateException.class, () ->
+                service.unregister(admin, target, borrowService));
+    }
+
+    @Test
+    void unregisterSucceeds() {
+        UserRepository repo = mock(UserRepository.class);
+        BorrowService borrowService = mock(BorrowService.class);
+
+        User target = new User("x", 0);
+        when(repo.findByUsername("x")).thenReturn(target);
+        when(borrowService.getBorrowRecordsForUser(target))
+                .thenReturn(List.of());
+        when(repo.deleteUser("x")).thenReturn(true);
+
+        UserService service = new UserService(repo);
+        User admin = new User("admin", 0);
+
+        boolean ok = service.unregister(admin, target, borrowService);
+
+        assertTrue(ok);
+        verify(repo).deleteUser("x");
     }
 }

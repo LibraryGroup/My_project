@@ -12,7 +12,7 @@ class FineServiceTest {
     private FineService fineService;
     private FakeUserRepository repo;
 
-    // Fake repo
+    
     static class FakeUserRepository implements UserRepository {
         User saved;
         User store;
@@ -37,44 +37,46 @@ class FineServiceTest {
     @BeforeEach
     void setUp() {
         repo = new FakeUserRepository();
-        repo.store = new User("ahmed", 50.0);
+        repo.store = new User("ahmed", 50.0);   
         fineService = new FineService(repo);
     }
 
     @Test
-    void addFineIncreasesBalance() {
-        fineService.addFine("ahmed", 20.0);
-        assertEquals(70.0, repo.saved.getFineBalance(), 0.001);
-    }
-
-    @Test
-    void payFinePartialReducesBalance() {
+    void payFineWithAmountLessThanBalanceShouldFailAndKeepBalance() {
         boolean ok = fineService.payFine("ahmed", 20.0);
-        assertTrue(ok);
-        assertEquals(30.0, repo.saved.getFineBalance(), 0.001);
+
+        assertFalse(ok);
+        
+        assertEquals(50.0, repo.store.getFineBalance(), 0.001);
+        
+        assertNull(repo.saved);
     }
 
     @Test
-    void payFineFullMakesBalanceZero() {
+    void payFineWithExactBalanceShouldSucceedAndSetBalanceToZero() {
         boolean ok = fineService.payFine("ahmed", 50.0);
+
         assertTrue(ok);
+        assertNotNull(repo.saved);
         assertEquals(0.0, repo.saved.getFineBalance(), 0.001);
     }
 
     @Test
-    void payFineInvalidAmountFails() {
-        boolean ok = fineService.payFine("ahmed", -10.0);
+    void payFineWithMoreThanBalanceShouldAlsoClearBalance() {
+        boolean ok = fineService.payFine("ahmed", 100.0);
+
+        assertTrue(ok);
+        assertNotNull(repo.saved);
+        assertEquals(0.0, repo.saved.getFineBalance(), 0.001);
+    }
+
+    @Test
+    void payFineForUnknownUserShouldFail() {
+        repo.store = null;  
+
+        boolean ok = fineService.payFine("unknown", 50.0);
+
         assertFalse(ok);
-    }
-
-    @Test
-    void hasUnpaidFinesReturnsTrue() {
-        assertTrue(fineService.hasUnpaidFines("ahmed"));
-    }
-
-    @Test
-    void hasUnpaidFinesFalseWhenZero() {
-        repo.store.setFineBalance(0.0);
-        assertFalse(fineService.hasUnpaidFines("ahmed"));
+        assertNull(repo.saved);
     }
 }

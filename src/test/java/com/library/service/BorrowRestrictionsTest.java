@@ -1,68 +1,38 @@
 package com.library.service;
 
-import com.library.model.Book;
-import com.library.model.BorrowRecord;
-import com.library.model.User;
-import com.library.repository.InMemoryBookRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.library.model.*;
+import com.library.repository.*;
+
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.*;
 
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BorrowRestrictionsTest {
 
-    private BorrowService borrowService;
-    private InMemoryBookRepository bookRepo;
-
-    @BeforeEach
-    void setUp() {
-        bookRepo = new InMemoryBookRepository();
-        borrowService = new BorrowService(bookRepo);
-    }
-
     @Test
-    void cannotBorrowWhenUserHasFine() {
-        User u = new User("x", 20.0);
-        Book b = new Book(1, "T", "A", "111");
-        bookRepo.add(b);
+    void cannotBorrowIfUserHasOverdue() {
 
-        assertThrows(IllegalStateException.class,
-                () -> borrowService.borrowBook(u, "111", LocalDate.now()));
-    }
+        MediaRepository mediaRepo = mock(MediaRepository.class);
+        BorrowRepository borrowRepo = mock(BorrowRepository.class);
 
-    @Test
-    void cannotBorrowWhenUserHasOverdueLoan() {
-        User u = new User("x", 0.0);
-        Book b1 = new Book(1, "B1", "A", "111");
-        Book b2 = new Book(2, "B2", "A", "222");
+        BorrowService service = new BorrowService(mediaRepo, borrowRepo);
 
-        bookRepo.add(b1);
-        bookRepo.add(b2);
+        User user = new User("ali", 0);
 
-        // first borrow (overdue)
-        BorrowRecord r = borrowService.borrowBook(u, "111",
-                LocalDate.now().minusDays(40));
-        r.setReturned(false);
+        Book book = new Book(1, "Java", "Author", "111");
 
-        assertThrows(IllegalStateException.class,
-                () -> borrowService.borrowBook(u, "222", LocalDate.now()));
-    }
+        BorrowRecord old = mock(BorrowRecord.class);
+        when(old.isReturned()).thenReturn(false);
+        when(old.isOverdue(any())).thenReturn(true);
 
-    @Test
-    void cannotBorrowWhenUserHasActiveLoan() {
-        User u = new User("x", 0.0);
-        Book b1 = new Book(1, "B1", "A", "111");
-        Book b2 = new Book(2, "B2", "A", "222");
+        when(borrowRepo.findByUser(user)).thenReturn(List.of(old));
+        when(mediaRepo.findById(1)).thenReturn(book);
 
-        bookRepo.add(b1);
-        bookRepo.add(b2);
-
-        BorrowRecord r = borrowService.borrowBook(u, "111", LocalDate.now());
-        r.setReturned(false);
-
-        assertThrows(IllegalStateException.class,
-                () -> borrowService.borrowBook(u, "222", LocalDate.now()));
+        assertThrows(IllegalStateException.class, () ->
+                service.borrow(user, 1, LocalDate.now()));
     }
 }

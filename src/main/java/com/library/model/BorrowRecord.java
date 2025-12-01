@@ -5,25 +5,26 @@ import java.time.LocalDate;
 public class BorrowRecord {
 
     private final User user;
-    private final Book book;
+    private final Media media;
     private final LocalDate borrowDate;
     private final LocalDate dueDate;
-    private boolean returned;
 
-    public BorrowRecord(User user, Book book, LocalDate borrowDate, LocalDate dueDate) {
+    private boolean returned = false;
+    private LocalDate returnDate;
+
+    public BorrowRecord(User user, Media media, LocalDate borrowDate, LocalDate dueDate) {
         this.user = user;
-        this.book = book;
+        this.media = media;
         this.borrowDate = borrowDate;
         this.dueDate = dueDate;
-        this.returned = false;
     }
 
     public User getUser() {
         return user;
     }
 
-    public Book getBook() {
-        return book;
+    public Media getMedia() {
+        return media;
     }
 
     public LocalDate getBorrowDate() {
@@ -42,18 +43,35 @@ public class BorrowRecord {
         this.returned = returned;
     }
 
-    public boolean isOverdue(LocalDate currentDate) {
-        return !returned && currentDate.isAfter(dueDate);
+    public LocalDate getReturnDate() {
+        return returnDate;
+    }
+
+    public void setReturnDate(LocalDate returnDate) {
+        this.returnDate = returnDate;
+    }
+
+   
+    public int getOverdueDays(LocalDate today) {
+        if (returned) return 0;
+        if (!today.isAfter(dueDate)) return 0;
+        return (int) java.time.temporal.ChronoUnit.DAYS.between(dueDate, today);
+    }
+
+   
+    public boolean isOverdue(LocalDate today) {
+        return getOverdueDays(today) > 0;
     }
 
     @Override
     public String toString() {
         return "BorrowRecord{" +
                 "user=" + user.getUsername() +
-                ", book=" + book.getTitle() +
+                ", media=" + media.getTitle() +
                 ", borrowDate=" + borrowDate +
                 ", dueDate=" + dueDate +
                 ", returned=" + returned +
+                ", returnDate=" + returnDate +
                 '}';
     }
 }

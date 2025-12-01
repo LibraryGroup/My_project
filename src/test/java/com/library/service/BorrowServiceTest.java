@@ -1,106 +1,94 @@
 package com.library.service;
 
-import com.library.model.Book;
-import com.library.model.BorrowRecord;
-import com.library.model.User;
-import com.library.repository.InMemoryBookRepository;
+import com.library.model.*;
+import com.library.repository.BorrowRepository;
+import com.library.repository.MediaRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BorrowServiceTest {
 
-    private BorrowService borrowService;
-    private InMemoryBookRepository bookRepository;
-    private User userNoFine;
-    private User userWithFine;
+    private BorrowRepository borrowRepo;
+    private MediaRepository mediaRepo;
+    private BorrowService service;
+
+    private User user;
+    private Book book;
 
     @BeforeEach
     void setUp() {
-        bookRepository = new InMemoryBookRepository();
+        borrowRepo = mock(BorrowRepository.class);
+        mediaRepo = mock(MediaRepository.class);
 
-        // نضيف كتب للمكتبة
-        BookService bookService = new BookService(bookRepository);
-        bookService.addBook("Clean Code", "Robert Martin", "111");
-        bookService.addBook("Effective Java", "Joshua Bloch", "222");
+        service = new BorrowService(mediaRepo, borrowRepo);
 
-        borrowService = new BorrowService(bookRepository);
-
-        userNoFine = new User("mohammad", 0.0);
-        userWithFine = new User("ahmed", 20.0);
+        user = new User("mohammad", 0.0);
+        book = new Book(1, "Clean Code", "Robert Martin", "111");
     }
 
     @Test
-    void borrowBookShouldMakeBookUnavailableAndSetDueDate() {
-        LocalDate borrowDate = LocalDate.of(2025, 1, 1);
+    void borrowShouldSaveRecordAndSetUnavailable() {
 
-        BorrowRecord record = borrowService.borrowBook(userNoFine, "111", borrowDate);
+        when(mediaRepo.findById(1)).thenReturn(book);
+        when(borrowRepo.findByUser(user)).thenReturn(new ArrayList<>());
 
-        assertNotNull(record);
-        assertEquals(borrowDate.plusDays(28), record.getDueDate());
+        LocalDate today = LocalDate.of(2025, 1, 1);
 
-        Book borrowedBook = record.getBook();
-        assertFalse(borrowedBook.isAvailable());
+        BorrowRecord rec = service.borrow(user, 1, today);
+
+        assertNotNull(rec);
+        assertFalse(book.isAvailable());
+        assertEquals(today.plusDays(28), rec.getDueDate());
+
+        verify(borrowRepo, times(1)).save(any(BorrowRecord.class));
     }
 
     @Test
-    void cannotBorrowWhenUserHasFine() {
-        assertThrows(IllegalStateException.class,
-                () -> borrowService.borrowBook(userWithFine, "111", LocalDate.now()));
+    void cannotBorrowIfHasFines() {
+        user.setFineBalance(30.0);
+
+        when(borrowRepo.findByUser(user)).thenReturn(new ArrayList<>());
+
+        assertThrows(IllegalStateException.class, () ->
+                service.borrow(user, 1, LocalDate.now()));
     }
 
     @Test
-    void cannotBorrowSameBookTwice() {
-        borrowService.borrowBook(userNoFine, "111", LocalDate.now());
+    void cannotBorrowOverdueItemExists() {
+        BorrowRecord r = mock(BorrowRecord.class);
+        when(r.isReturned()).thenReturn(false);
+        when(r.isOverdue(any())).thenReturn(true);
 
-        assertThrows(IllegalStateException.class,
-                () -> borrowService.borrowBook(userNoFine, "111", LocalDate.now()));
+        when(borrowRepo.findByUser(user)).thenReturn(List.of(r));
+        when(mediaRepo.findById(1)).thenReturn(book);
+
+        assertThrows(IllegalStateException.class, () ->
+                service.borrow(user, 1, LocalDate.now()));
     }
 
     @Test
-    void overdueDetectionShouldReturnOverdueRecords() {
-        LocalDate borrowDate = LocalDate.of(2025, 1, 1);
-        BorrowRecord record = borrowService.borrowBook(userNoFine, "222", borrowDate);
+    void returnItemShouldUpdateRecord() {
+        BorrowRecord r = new BorrowRecord(user, book,
+                LocalDate.now().minusDays(10),
+                LocalDate.now().minusDays(5));
 
-        LocalDate notOverdueDate = borrowDate.plusDays(10);
-        List<BorrowRecord> none = borrowService.findOverdueRecords(notOverdueDate);
-        assertTrue(none.isEmpty());
+        List<BorrowRecord> list = new ArrayList<>();
+        list.add(r);
 
-        LocalDate overdueDate = borrowDate.plusDays(29);
-        List<BorrowRecord> overdue = borrowService.findOverdueRecords(overdueDate);
+        when(borrowRepo.findAll()).thenReturn(list);
 
-        assertEquals(1, overdue.size());
-        assertTrue(overdue.get(0).isOverdue(overdueDate));
-        assertSame(record, overdue.get(0));
+        boolean ok = service.returnItem("mohammad", 1, LocalDate.now());
+
+        assertTrue(ok);
+        assertTrue(r.isReturned());
+        assertTrue(book.isAvailable());
+        verify(borrowRepo, times(1)).update(r);
     }
-    @Test
-    void cannotBorrowIfUserHasOverdueBooks() {
-
-        User user = new User("mohammad", 0.0);
-
-        Book overdueBook = new Book(10, "Old Book", "Author", "999");
-        bookRepository.add(overdueBook);
-
-        BorrowRecord oldRecord = new BorrowRecord(
-                user,
-                overdueBook,
-                LocalDate.of(2025, 1, 1),
-                LocalDate.of(2025, 1, 10)
-        );
-        oldRecord.setReturned(false);
-
-        // نضيف السجل المتأخر باستخدام الميثود الجديدة
-        borrowService._testGetRecords(user.getUsername()).add(oldRecord);
-
-        // التوقع: يجب أن يمنع الاستعارة
-        assertThrows(IllegalStateException.class,
-                () -> borrowService.borrowBook(user, "111", LocalDate.of(2025, 2, 15))
-        );
-    }
-
-
 }

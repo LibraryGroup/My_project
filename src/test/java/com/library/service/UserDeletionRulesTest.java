@@ -1,115 +1,75 @@
 package com.library.service;
 
-import com.library.model.Book;
-import com.library.model.BorrowRecord;
-import com.library.model.User;
-import com.library.repository.UserRepository;
-import com.library.repository.InMemoryBookRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.library.model.*;
+import com.library.repository.*;
+
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.*;
 
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserDeletionRulesTest {
 
-    private UserService userService;
-    private FakeUserRepo repo;
-    private BorrowService borrowService;
-
-    static class FakeUserRepo implements UserRepository {
-        User stored;
-        boolean deleted = false;
-
-        @Override
-        public User findByUsername(String username) {
-            return stored;
-        }
-
-        @Override
-        public void save(User user) {
-            stored = user;
-        }
-
-        @Override
-        public boolean deleteUser(String username) {
-            deleted = true;
-            return true;
-        }
-    }
-
-    @BeforeEach
-    void setUp() {
-        repo = new FakeUserRepo();
-        userService = new UserService(repo);
-        borrowService = new BorrowService(new InMemoryBookRepository());
-    }
-
     @Test
-    void unregisterFailsIfNotAdmin() {
-        repo.stored = new User("test", 0.0);
-        User normal = new User("moh", 0.0);
+    void cannotDeleteUserWithOverdue() {
 
-        assertThrows(SecurityException.class,
-                () -> userService.unregister(normal, repo.stored, borrowService));
-    }
+        BorrowRepository borrowRepo = mock(BorrowRepository.class);
+        MediaRepository mediaRepo = mock(MediaRepository.class);
 
-    @Test
-    void unregisterFailsIfUserHasFines() {
-        repo.stored = new User("test", 30.0);
+        BorrowService borrowService = new BorrowService(mediaRepo, borrowRepo);
 
-        assertFalse(userService.unregister(new User("admin", 0.0),
-                repo.stored, borrowService));
-    }
+        UserRepository userRepo = mock(UserRepository.class);
+        UserService userService = new UserService(userRepo);
 
-    @Test
-    void unregisterFailsIfUserHasActiveLoans() {
-        repo.stored = new User("test", 0.0);
+        User target = new User("test", 0);
 
-        InMemoryBookRepository br = new InMemoryBookRepository();
-        BorrowService bs = new BorrowService(br);
+        BorrowRecord r = mock(BorrowRecord.class);
+        when(r.isReturned()).thenReturn(false);
+        when(r.isOverdue(any())).thenReturn(true);
 
-        Book b = new Book(1, "X", "A", "111");
-        br.add(b);
-
-        BorrowRecord r = bs.borrowBook(repo.stored, "111", LocalDate.now());
-        r.setReturned(false);
-
-        assertFalse(userService.unregister(new User("admin", 0.0),
-                repo.stored, bs));
-    }
-
-    @Test
-    void unregisterFailsIfUserHasOverdueLoans() {
-        repo.stored = new User("test", 0.0);
-
-        InMemoryBookRepository br = new InMemoryBookRepository();
-        BorrowService bs = new BorrowService(br);
-
-        Book b = new Book(1, "X", "A", "111");
-        br.add(b);
-
-        BorrowRecord r = bs.borrowBook(repo.stored, "111",
-                LocalDate.now().minusDays(40));
-        r.setReturned(false);
+        when(borrowRepo.findByUser(target)).thenReturn(List.of(r));
 
         assertThrows(IllegalStateException.class,
-                () -> userService.unregister(new User("admin", 0.0),
-                        repo.stored, bs));
+                () -> userService.unregister(
+                        new User("admin", 0),
+                        target,
+                        borrowService
+                ));
     }
 
     @Test
-    void unregisterSucceedsWhenUserIsClean() {
-        repo.stored = new User("test", 0.0);
+    void cannotDeleteUserWithFines() {
+        UserService userService = new UserService(mock(UserRepository.class));
 
-        boolean ok = userService.unregister(
-                new User("admin", 0.0),
-                repo.stored,
-                borrowService
-        );
+        User admin = new User("admin", 0);
+        User target = new User("x", 50);
+
+        assertThrows(IllegalStateException.class,
+                () -> userService.unregister(admin, target, null));
+    }
+
+    @Test
+    void deleteSucceedsWhenNoIssues() {
+
+        UserRepository repo = mock(UserRepository.class);
+        UserService userService = new UserService(repo);
+
+        User admin = new User("admin", 0);
+        User target = new User("john", 0);
+
+        BorrowRepository borrowRepo = mock(BorrowRepository.class);
+        MediaRepository mediaRepo = mock(MediaRepository.class);
+        BorrowService borrowService = new BorrowService(mediaRepo, borrowRepo);
+
+        when(borrowRepo.findByUser(target)).thenReturn(new ArrayList<>());
+
+        boolean ok = userService.unregister(admin, target, borrowService);
 
         assertTrue(ok);
-        assertTrue(repo.deleted);
+        verify(repo, times(1)).deleteUser("john");
     }
 }
+

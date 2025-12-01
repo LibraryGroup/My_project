@@ -3,7 +3,6 @@ package com.library.communication;
 import com.library.model.EmailMessage;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class MockEmailServer implements EmailServer {
@@ -15,7 +14,12 @@ public class MockEmailServer implements EmailServer {
         sentMessages.add(message);
     }
 
+   
     public List<EmailMessage> getSentMessages() {
-        return Collections.unmodifiableList(sentMessages);
+        return sentMessages;
+    }
+
+    public void clear() {
+        sentMessages.clear();
     }
 }

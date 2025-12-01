@@ -1,33 +1,24 @@
 package com.library.model;
 
-public class Book {
+import com.library.fines.BookFineStrategy;
 
-    private int id;
-    private String title;
+public class Book extends Media {
+
     private String author;
     private String isbn;
-    private boolean available;
 
     public Book(int id, String title, String author, String isbn) {
-        this.id = id;
-        this.title = title;
+        super(id, title); 
         this.author = author;
         this.isbn = isbn;
-        this.available = true;
     }
 
-    public int getId() {
-        return id;
+    @Override
+    public int getBorrowDays() {
+        return 28; 
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
+    
     public String getAuthor() {
         return author;
     }
@@ -36,22 +27,29 @@ public class Book {
         return isbn;
     }
 
-    public boolean isAvailable() {
-        return available;
+    
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
-    public void setAvailable(boolean available) {
-        this.available = available;
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    
+    @Override
+    public void setId(int id) {
+        super.setId(id);
     }
 
     @Override
     public String toString() {
         return "Book{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
+                "id=" + getId() +
+                ", title='" + getTitle() + '\'' +
                 ", author='" + author + '\'' +
                 ", isbn='" + isbn + '\'' +
-                ", available=" + available +
+                ", available=" + isAvailable() +
                 '}';
     }
 }

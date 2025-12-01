@@ -1,23 +1,26 @@
 package com.library.service;
 
-import com.library.model.Book;
 import com.library.model.BorrowRecord;
+import com.library.model.Media;
 import com.library.model.User;
-import com.library.repository.BookRepository;
+import com.library.repository.BorrowRepository;
+import com.library.repository.MediaRepository;
 
 import java.time.LocalDate;
 import java.util.*;
 
 public class BorrowService {
 
-    private final BookRepository bookRepository;
-    private final Map<String, List<BorrowRecord>> userBorrows = new HashMap<>();
+    private final MediaRepository mediaRepo;
+    private final BorrowRepository borrowRepo;
 
-    public BorrowService(BookRepository bookRepository) {
-        this.bookRepository = bookRepository;
+    public BorrowService(MediaRepository mediaRepo, BorrowRepository borrowRepo) {
+        this.mediaRepo = mediaRepo;
+        this.borrowRepo = borrowRepo;
     }
 
-    public BorrowRecord borrowBook(User user, String isbn, LocalDate borrowDate) {
+   
+    public BorrowRecord borrow(User user, int mediaId, LocalDate borrowDate) {
 
         if (user == null)
             throw new IllegalArgumentException("User is required");
@@ -25,79 +28,80 @@ public class BorrowService {
         if (borrowDate == null)
             throw new IllegalArgumentException("Borrow date required");
 
-        // -----------------------------------------
-        // Sprint 4 Logic: Check active borrowed books
-        // -----------------------------------------
-        List<BorrowRecord> records = userBorrows.get(user.getUsername());
-        if (records != null) {
-            for (BorrowRecord r : records) {
-                // إذا كان السجل غير مُرجع فهو إعارة فعالة active loan
-                if (!r.isReturned()) {
-
-                    // إذا الإعارة الفعالة نفسها متأخرة → منع الاقتراض
-                    if (r.isOverdue(borrowDate)) {
-                        throw new IllegalStateException("User has overdue books.");
-                    }
-                }
+       
+        for (BorrowRecord r : getBorrowRecordsForUser(user)) {
+            if (!r.isReturned() && r.isOverdue(borrowDate)) {
+                throw new IllegalStateException("User has overdue items.");
             }
         }
 
-        // -----------------------------------------
-        // Sprint 4 Logic: Unpaid fines
-        // -----------------------------------------
+        
         if (user.getFineBalance() > 0) {
             throw new IllegalStateException("User has unpaid fines.");
         }
 
-        // -----------------------------------------
-        // Book validation
-        // -----------------------------------------
-        Book book = bookRepository.searchByIsbn(isbn);
-        if (book == null)
-            throw new IllegalArgumentException("Book not found");
+        Media media = mediaRepo.findById(mediaId);
+        if (media == null)
+            throw new IllegalArgumentException("Media not found");
 
-        if (!book.isAvailable())
-            throw new IllegalStateException("Book already borrowed");
+        if (!media.isAvailable())
+            throw new IllegalStateException("Media already borrowed");
 
-        // -----------------------------------------
-        // Borrow logic
-        // -----------------------------------------
-        book.setAvailable(false);
-        LocalDate due = borrowDate.plusDays(28);
+        // تحديد موعد الإرجاع
+        LocalDate dueDate = borrowDate.plusDays(media.getBorrowDays());
 
-        BorrowRecord record = new BorrowRecord(user, book, borrowDate, due);
+        // إنشاء سجل جديد
+        BorrowRecord record = new BorrowRecord(user, media, borrowDate, dueDate);
 
-        userBorrows
-                .computeIfAbsent(user.getUsername(), k -> new ArrayList<>())
-                .add(record);
+        // تحديث حالة المادة
+        media.setAvailable(false);
+
+        // حفظ السجل في الملف
+        borrowRepo.save(record);
 
         return record;
     }
 
-    // Get all records for a specific user
-    public List<BorrowRecord> getBorrowRecordsForUser(User user) {
-        List<BorrowRecord> list = userBorrows.get(user.getUsername());
-        if (list == null) {
-            return Collections.emptyList();
-        }
-        return Collections.unmodifiableList(list);
-    }
+    
+    public boolean returnItem(String username, int mediaId, LocalDate returnDate) {
 
-    // Find all overdue records
-    public List<BorrowRecord> findOverdueRecords(LocalDate date) {
-        List<BorrowRecord> result = new ArrayList<>();
-        for (List<BorrowRecord> list : userBorrows.values()) {
-            for (BorrowRecord r : list) {
-                if (r.isOverdue(date)) {
-                    result.add(r);
-                }
+        for (BorrowRecord r : borrowRepo.findAll()) {
+
+            if (r.getUser().getUsername().equals(username)
+                    && r.getMedia().getId() == mediaId
+                    && !r.isReturned()) {
+
+                r.setReturned(true);
+                r.setReturnDate(returnDate);
+                r.getMedia().setAvailable(true);
+
+                borrowRepo.update(r);
+                return true;
             }
         }
-        return result;
+        return false;
     }
 
-    // Test helper: access records for specific user
-    List<BorrowRecord> _testGetRecords(String username) {
-        return userBorrows.computeIfAbsent(username, k -> new ArrayList<>());
+    
+    public List<BorrowRecord> getBorrowRecordsForUser(User user) {
+        return borrowRepo.findByUser(user);
+    }
+
+   
+    public Set<User> getAllUsersWithRecords() {
+        return borrowRepo.getAllUsers();
+    }
+
+    
+    public List<BorrowRecord> findOverdueRecords(LocalDate date) {
+        List<BorrowRecord> list = new ArrayList<>();
+
+        for (BorrowRecord r : borrowRepo.findAll()) {
+            if (r.isOverdue(date)) {
+                list.add(r);
+            }
+        }
+
+        return list;
     }
 }

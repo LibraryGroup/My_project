@@ -6,7 +6,7 @@ public interface UserRepository {
 
     User findByUsername(String username);
 
-    void save(User user);        // ← ضروري لإضافة/تحديث المستخدم
+    void save(User user);        
 
-    boolean deleteUser(String username);  // Sprint 4
+    boolean deleteUser(String username);  
 }
