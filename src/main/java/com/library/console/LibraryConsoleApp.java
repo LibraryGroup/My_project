@@ -27,7 +27,7 @@ public class LibraryConsoleApp {
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-    	System.out.println("Working directory = " + System.getProperty("user.dir"));
+        System.out.println("Working directory = " + System.getProperty("user.dir"));
 
         // ===== Repositories =====
         FileAdminRepository adminRepo = new FileAdminRepository("admins.txt");
@@ -35,23 +35,19 @@ public class LibraryConsoleApp {
 
         UserRepository userRepo = new FileUserRepository("users.txt");
 
-        // 🔥 New: Borrow repository stored in file
+        // 🔥 Borrow repository
         FileBorrowRepository borrowRepo = new FileBorrowRepository("borrow.txt", mediaRepo);
 
         // ===== Services =====
         AuthService authService = new AuthService(adminRepo);
         MediaService mediaService = new MediaService(mediaRepo);
-
-        // 🔥 New: BorrowService now uses BOTH mediaRepo + borrowRepo
         BorrowService borrowService = new BorrowService(mediaRepo, borrowRepo);
-
         FineService fineService = new FineService(userRepo);
 
-        // ===== Notification System (Observer Pattern) =====
+        // ===== Notification System =====
         EmailServer emailServer = new MockEmailServer();
         ReminderService reminderService = new ReminderService(borrowService);
 
-        // Attach all 4 observers
         reminderService.addObserver(new EmailNotifier(emailServer));
         reminderService.addObserver(new SMSNotifier());
         reminderService.addObserver(new PushNotifier());
@@ -78,7 +74,6 @@ public class LibraryConsoleApp {
                     case "4": exit = true; break;
                     default: System.out.println("❌ خيار غير صحيح.");
                 }
-
             } else {
                 switch (choice) {
                     case "1": handleAddMedia(mediaService); break;
@@ -88,8 +83,10 @@ public class LibraryConsoleApp {
                     case "5": handleUnregister(userService, borrowService); break;
                     case "6": handleSendReminders(reminderService); break;
                     case "7": handleViewBorrowed(borrowService, userRepo); break;
-                    case "8": authService.logout();
-                             System.out.println("✅ تم تسجيل الخروج."); break;
+                    case "8": 
+                        authService.logout();
+                        System.out.println("✅ تم تسجيل الخروج.");
+                        break;
                     case "9": exit = true; break;
                     default: System.out.println("❌ خيار غير صحيح.");
                 }
@@ -101,7 +98,7 @@ public class LibraryConsoleApp {
         System.out.println("✅ تم إغلاق النظام.");
     }
 
-   
+    // ======================= MENU =======================
 
     private static void printMenu(boolean loggedIn) {
         System.out.println("----------------------------------");
@@ -125,7 +122,7 @@ public class LibraryConsoleApp {
         }
     }
 
-   
+    // ======================= INPUT HELPERS =======================
 
     private static int readInt(String message) {
         while (true) {
@@ -154,7 +151,7 @@ public class LibraryConsoleApp {
         return scanner.nextLine().trim();
     }
 
-   
+    // ======================= HANDLERS =======================
 
     private static void handleLogin(AuthService authService) {
         String username = readText("اسم المستخدم: ");
@@ -187,6 +184,8 @@ public class LibraryConsoleApp {
         System.out.println("✅ تم إنشاء المستخدم بنجاح.");
     }
 
+    // ======================= ADD MEDIA WITH COPIES =======================
+
     private static void handleAddMedia(MediaService mediaService) {
         System.out.println("اختر النوع:");
         System.out.println("1) كتاب");
@@ -194,18 +193,19 @@ public class LibraryConsoleApp {
 
         String type = readText("اختيار: ");
         String title = readText("العنوان: ");
+        int copies = readInt("عدد النسخ: ");
 
         switch (type) {
             case "1":
                 String author = readText("المؤلف: ");
                 String isbn = readText("ISBN: ");
-                Media book = mediaService.addBook(title, author, isbn);
+                Media book = mediaService.addBook(title, author, isbn, copies);
                 System.out.println("✅ تمت إضافة كتاب: " + book);
                 break;
 
             case "2":
                 String artist = readText("الفنان: ");
-                Media cd = mediaService.addCD(title, artist);
+                Media cd = mediaService.addCD(title, artist, copies);
                 System.out.println("✅ تمت إضافة CD: " + cd);
                 break;
 
@@ -306,6 +306,3 @@ public class LibraryConsoleApp {
         }
     }
 }
-
-
-

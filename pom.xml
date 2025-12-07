@@ -13,6 +13,13 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- SonarCloud -->
+        <sonar.organization>obadayasin</sonar.organization>
+        <sonar.projectKey>obadayasin_My_project</sonar.projectKey>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
+        <!-- Testing -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <mockito.version>5.11.0</mockito.version>
     </properties>
@@ -55,35 +62,39 @@
                 </configuration>
             </plugin>
 
-            <!-- Jacoco: قياس التغطية -->
+            <!-- Jacoco -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.11</version>
 
+                <executions>
+
+                    <!-- لتجهيز Agent -->
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- توليد تقرير التغطية -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+                </executions>
+
                 <configuration>
-                    <!-- استثناءات التغطية -->
                     <excludes>
                         <exclude>**/model/**</exclude>
                         <exclude>**/repository/**</exclude>
                         <exclude>**/console/**</exclude>
                     </excludes>
                 </configuration>
-
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
 
             </plugin>
 

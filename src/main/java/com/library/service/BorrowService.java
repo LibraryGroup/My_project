@@ -19,7 +19,6 @@ public class BorrowService {
         this.borrowRepo = borrowRepo;
     }
 
-   
     public BorrowRecord borrow(User user, int mediaId, LocalDate borrowDate) {
 
         if (user == null)
@@ -28,14 +27,12 @@ public class BorrowService {
         if (borrowDate == null)
             throw new IllegalArgumentException("Borrow date required");
 
-       
         for (BorrowRecord r : getBorrowRecordsForUser(user)) {
             if (!r.isReturned() && r.isOverdue(borrowDate)) {
                 throw new IllegalStateException("User has overdue items.");
             }
         }
 
-        
         if (user.getFineBalance() > 0) {
             throw new IllegalStateException("User has unpaid fines.");
         }
@@ -45,7 +42,7 @@ public class BorrowService {
             throw new IllegalArgumentException("Media not found");
 
         if (!media.isAvailable())
-            throw new IllegalStateException("Media already borrowed");
+            throw new IllegalStateException("No copies available");
 
         // تحديد موعد الإرجاع
         LocalDate dueDate = borrowDate.plusDays(media.getBorrowDays());
@@ -53,16 +50,16 @@ public class BorrowService {
         // إنشاء سجل جديد
         BorrowRecord record = new BorrowRecord(user, media, borrowDate, dueDate);
 
-        // تحديث حالة المادة
-        media.setAvailable(false);
+        // ↓↓ حجز نسخة ↓↓
+        media.decreaseCopy();
+        mediaRepo.save(media);
 
-        // حفظ السجل في الملف
+        // حفظ السجل
         borrowRepo.save(record);
 
         return record;
     }
 
-    
     public boolean returnItem(String username, int mediaId, LocalDate returnDate) {
 
         for (BorrowRecord r : borrowRepo.findAll()) {
@@ -71,9 +68,12 @@ public class BorrowService {
                     && r.getMedia().getId() == mediaId
                     && !r.isReturned()) {
 
+                // إرجاع نسخة
+                r.getMedia().increaseCopy();
+                mediaRepo.save(r.getMedia());
+
                 r.setReturned(true);
                 r.setReturnDate(returnDate);
-                r.getMedia().setAvailable(true);
 
                 borrowRepo.update(r);
                 return true;
@@ -82,17 +82,14 @@ public class BorrowService {
         return false;
     }
 
-    
     public List<BorrowRecord> getBorrowRecordsForUser(User user) {
         return borrowRepo.findByUser(user);
     }
 
-   
     public Set<User> getAllUsersWithRecords() {
         return borrowRepo.getAllUsers();
     }
 
-    
     public List<BorrowRecord> findOverdueRecords(LocalDate date) {
         List<BorrowRecord> list = new ArrayList<>();
 
