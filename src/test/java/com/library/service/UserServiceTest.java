@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class UserServiceTest {
 
-    
     @Test
     void findUserReturnsCorrect() {
         UserRepository repo = mock(UserRepository.class);
@@ -26,48 +25,36 @@ class UserServiceTest {
         User actual = service.findUser("mohammad");
 
         assertEquals(expected, actual);
-        verify(repo, times(1)).findByUsername("mohammad");
+        verify(repo).findByUsername("mohammad");
     }
 
-    
     @Test
     void userCanBorrowWhenNoFines() {
         UserService service = new UserService(mock(UserRepository.class));
-
-        User user = new User("ali", 0.0);
-
-        assertTrue(service.canBorrow(user));
+        assertTrue(service.canBorrow(new User("ali", 0.0)));
     }
 
     @Test
     void userCannotBorrowWhenHasFines() {
         UserService service = new UserService(mock(UserRepository.class));
-
-        User user = new User("ali", 50.0);
-
-        assertFalse(service.canBorrow(user));
+        assertFalse(service.canBorrow(new User("ali", 50.0)));
     }
 
-   
     @Test
     void payFineReducesBalance() {
         UserService service = new UserService(mock(UserRepository.class));
-
         User user = new User("ali", 30.0);
 
         service.payFine(user, 10.0);
-
         assertEquals(20.0, user.getFineBalance());
     }
 
     @Test
     void payFineClearsBalanceIfAmountTooLarge() {
         UserService service = new UserService(mock(UserRepository.class));
-
         User user = new User("ali", 25.0);
 
         service.payFine(user, 100.0);
-
         assertEquals(0.0, user.getFineBalance());
     }
 
@@ -76,26 +63,19 @@ class UserServiceTest {
         UserService service = new UserService(mock(UserRepository.class));
         User user = new User("ali", 20.0);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.payFine(user, 0));
-
-        assertThrows(IllegalArgumentException.class,
-                () -> service.payFine(user, -5));
+        assertThrows(IllegalArgumentException.class, () -> service.payFine(user, 0));
+        assertThrows(IllegalArgumentException.class, () -> service.payFine(user, -5));
     }
 
-    
     @Test
     void unregisterFailsIfNotAdmin() {
-        UserRepository repo = mock(UserRepository.class);
+        UserService service = new UserService(mock(UserRepository.class));
         BorrowService borrowService = mock(BorrowService.class);
-
-        UserService service = new UserService(repo);
 
         User notAdmin = new User("someone", 0);
         User target = new User("x", 0);
 
-        assertThrows(SecurityException.class,
-                () -> service.unregister(notAdmin, target, borrowService));
+        assertThrows(SecurityException.class, () -> service.unregister(notAdmin, target, borrowService));
     }
 
     @Test
@@ -108,9 +88,7 @@ class UserServiceTest {
 
         UserService service = new UserService(repo);
 
-        User admin = new User("admin", 0);
-
-        assertFalse(service.unregister(admin, target, borrowService));
+        assertFalse(service.unregister(new User("admin", 0), target, borrowService));
     }
 
     @Test
@@ -121,17 +99,14 @@ class UserServiceTest {
         User target = new User("x", 0);
         when(repo.findByUsername("x")).thenReturn(target);
 
-        BorrowRecord active = mock(BorrowRecord.class);
-        when(active.isReturned()).thenReturn(false);
+        BorrowRecord loan = mock(BorrowRecord.class);
+        when(loan.isReturned()).thenReturn(false);
 
-        when(borrowService.getBorrowRecordsForUser(target))
-                .thenReturn(List.of(active));
+        when(borrowService.getBorrowRecordsForUser(target)).thenReturn(List.of(loan));
 
         UserService service = new UserService(repo);
 
-        User admin = new User("admin", 0);
-
-        assertFalse(service.unregister(admin, target, borrowService));
+        assertFalse(service.unregister(new User("admin", 0), target, borrowService));
     }
 
     @Test
@@ -146,14 +121,12 @@ class UserServiceTest {
         when(overdue.isReturned()).thenReturn(true);
         when(overdue.isOverdue(any(LocalDate.class))).thenReturn(true);
 
-        when(borrowService.getBorrowRecordsForUser(target))
-                .thenReturn(List.of(overdue));
+        when(borrowService.getBorrowRecordsForUser(target)).thenReturn(List.of(overdue));
 
         UserService service = new UserService(repo);
-        User admin = new User("admin", 0);
 
-        assertThrows(IllegalStateException.class, () ->
-                service.unregister(admin, target, borrowService));
+        assertThrows(IllegalStateException.class,
+                () -> service.unregister(new User("admin", 0), target, borrowService));
     }
 
     @Test
@@ -163,14 +136,13 @@ class UserServiceTest {
 
         User target = new User("x", 0);
         when(repo.findByUsername("x")).thenReturn(target);
-        when(borrowService.getBorrowRecordsForUser(target))
-                .thenReturn(List.of());
+
+        when(borrowService.getBorrowRecordsForUser(target)).thenReturn(List.of());
         when(repo.deleteUser("x")).thenReturn(true);
 
         UserService service = new UserService(repo);
-        User admin = new User("admin", 0);
 
-        boolean ok = service.unregister(admin, target, borrowService);
+        boolean ok = service.unregister(new User("admin", 0), target, borrowService);
 
         assertTrue(ok);
         verify(repo).deleteUser("x");

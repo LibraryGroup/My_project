@@ -36,10 +36,16 @@ public class UserService {
         }
     }
 
-    
+    /**
+     * Business rules:
+     * 1. Only admin can unregister → SecurityException
+     * 2. User with fines → return false (NO exception)
+     * 3. User with active (unreturned) loans → return false (NO exception)
+     * 4. User with overdue items → throw IllegalStateException
+     * 5. Otherwise → delete and return true
+     */
     public boolean unregister(User admin, User targetUser, BorrowService borrowService) {
 
-        // Only admin can delete
         if (admin == null || !"admin".equals(admin.getUsername())) {
             throw new SecurityException("Only admin can unregister users");
         }
@@ -47,30 +53,27 @@ public class UserService {
         User user = repository.findByUsername(targetUser.getUsername());
         if (user == null) return false;
 
-        // === Rule 1: Cannot delete user with fines ===
+        // Rule: Fines → return false
         if (user.getFineBalance() > 0) {
-            throw new IllegalStateException("User has outstanding fines");
+            return false;
         }
 
-        // === Rule 2: Cannot delete user with overdue OR unreturned items ===
         List<BorrowRecord> loans = borrowService.getBorrowRecordsForUser(user);
 
         for (BorrowRecord r : loans) {
 
-            // If not returned → test expects IllegalStateException
+            // Active unreturned loan → return false
             if (!r.isReturned()) {
-                throw new IllegalStateException("User has unreturned items");
+                return false;
             }
 
+            // Overdue → exception
             if (r.isOverdue(LocalDate.now())) {
                 throw new IllegalStateException("User has overdue items");
             }
         }
 
-        // Passed all checks → delete user
-        repository.deleteUser(user.getUsername());
-        return true;
+        // All checks passed → delete
+        return repository.deleteUser(user.getUsername());
     }
-
 }
-
