@@ -20,7 +20,6 @@ class ReminderServiceTest {
     @Test
     void sendReminderForOneUserWithTwoOverdueItems() {
 
-        
         BorrowService borrowService = mock(BorrowService.class);
         Observer observer = mock(Observer.class);
 
@@ -38,20 +37,15 @@ class ReminderServiceTest {
         BorrowRecord r1 = new BorrowRecord(user, b1, borrow1, borrow1.plusDays(28));
         BorrowRecord r2 = new BorrowRecord(user, b2, borrow2, borrow2.plusDays(28));
 
-        
         LocalDate now = LocalDate.of(2025, 2, 10);
 
-        
         when(borrowService.getAllUsersWithRecords()).thenReturn(Set.of(user));
         when(borrowService.getBorrowRecordsForUser(user)).thenReturn(List.of(r1, r2));
 
-        
         int affectedUsers = reminderService.sendOverdueReminders(now);
 
-        
         assertEquals(1, affectedUsers);
 
-        
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         ArgumentCaptor<String> msgCaptor = ArgumentCaptor.forClass(String.class);
 
