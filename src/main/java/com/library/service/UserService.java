@@ -46,34 +46,39 @@ public class UserService {
      */
     public boolean unregister(User admin, User targetUser, BorrowService borrowService) {
 
+        // 1) فقط الأدمن مسموح له بالحذف
         if (admin == null || !"admin".equals(admin.getUsername())) {
             throw new SecurityException("Only admin can unregister users");
         }
 
+        // 2) إيجاد المستخدم
         User user = repository.findByUsername(targetUser.getUsername());
         if (user == null) return false;
 
-        // Rule: Fines → return false
+        // 3) ممنوع حذف مستخدم عليه غرامات → يجب أن نرمي استثناء (كما يطلب الاختبار)
         if (user.getFineBalance() > 0) {
-            return false;
+            throw new IllegalStateException("User has outstanding fines");
         }
 
+        // 4) فحص سجلات الإعارة للمستخدم
         List<BorrowRecord> loans = borrowService.getBorrowRecordsForUser(user);
 
         for (BorrowRecord r : loans) {
 
-            // Active unreturned loan → return false
+            // إذا عنده مواد غير مُعادة → الاختبار يتوقع IllegalStateException
             if (!r.isReturned()) {
-                return false;
+                throw new IllegalStateException("User has unreturned items");
             }
 
-            // Overdue → exception
+            // إذا المادة متأخرة → الاختبار يتوقع IllegalStateException
             if (r.isOverdue(LocalDate.now())) {
                 throw new IllegalStateException("User has overdue items");
             }
         }
 
-        // All checks passed → delete
-        return repository.deleteUser(user.getUsername());
+        // 5) إذا وصلنا هنا، يعني لا غرامات ولا تأخيرات ولا مواد غير مُعادة
+        boolean deleted = repository.deleteUser(user.getUsername());
+        return deleted;
     }
+
 }
