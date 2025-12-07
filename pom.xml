@@ -10,9 +10,9 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-      <maven.compiler.source>25</maven.compiler.source>
-<maven.compiler.target>25</maven.compiler.target>
-
+        <!-- Java version for GitHub Actions -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
@@ -27,6 +27,7 @@
     </properties>
 
     <dependencies>
+
         <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -49,6 +50,7 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -64,7 +66,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Jacoco -->
+            <!-- Jacoco Plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -72,14 +74,14 @@
 
                 <executions>
 
-                    <!-- لتجهيز Agent -->
+                    <!-- Inject agent for coverage -->
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
 
-                    <!-- توليد تقرير التغطية -->
+                    <!-- Generate coverage report -->
                     <execution>
                         <id>jacoco-report</id>
                         <phase>prepare-package</phase>
