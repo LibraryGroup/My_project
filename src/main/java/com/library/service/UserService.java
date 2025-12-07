@@ -37,16 +37,16 @@ public class UserService {
     }
 
     /**
-     * Business rules:
-     * 1. Only admin can unregister → SecurityException
-     * 2. User with fines → return false (NO exception)
-     * 3. User with active (unreturned) loans → return false (NO exception)
-     * 4. User with overdue items → throw IllegalStateException
-     * 5. Otherwise → delete and return true
+     * Business rules aligned with test expectations:
+     * 1) Only admin can unregister → SecurityException
+     * 2) User with fines → IllegalStateException
+     * 3) User with unreturned loans → return false
+     * 4) User with overdue items → IllegalStateException
+     * 5) Otherwise delete → return true
      */
     public boolean unregister(User admin, User targetUser, BorrowService borrowService) {
 
-        // Admin check
+        // Only admin allowed
         if (admin == null || !"admin".equals(admin.getUsername())) {
             throw new SecurityException("Only admin can unregister users");
         }
@@ -54,29 +54,27 @@ public class UserService {
         User user = repository.findByUsername(targetUser.getUsername());
         if (user == null) return false;
 
-        // 1) Has fines → return false (NOT exception)
+        // (2) User has fines → Exception (tests expect this!)
         if (user.getFineBalance() > 0) {
-            return false;
+            throw new IllegalStateException("User has outstanding fines");
         }
 
-        // 2) Active loans (not returned) → return false (NOT exception)
         List<BorrowRecord> loans = borrowService.getBorrowRecordsForUser(user);
 
         for (BorrowRecord r : loans) {
 
+            // (3) Active loan → return false
             if (!r.isReturned()) {
-                return false;   // NOT exception
+                return false;
             }
 
-            // 3) Overdue → EXCEPTION
+            // (4) Overdue → Exception
             if (r.isOverdue(LocalDate.now())) {
                 throw new IllegalStateException("User has overdue items");
             }
         }
 
-        // Delete the user
+        // (5) Success → delete user
         return repository.deleteUser(user.getUsername());
     }
-
-
 }

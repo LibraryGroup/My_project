@@ -72,10 +72,8 @@ class UserServiceTest {
         UserService service = new UserService(mock(UserRepository.class));
         BorrowService borrowService = mock(BorrowService.class);
 
-        User notAdmin = new User("someone", 0);
-        User target = new User("x", 0);
-
-        assertThrows(SecurityException.class, () -> service.unregister(notAdmin, target, borrowService));
+        assertThrows(SecurityException.class,
+                () -> service.unregister(new User("someone", 0), new User("x", 0), borrowService));
     }
 
     @Test
@@ -88,7 +86,8 @@ class UserServiceTest {
 
         UserService service = new UserService(repo);
 
-        assertFalse(service.unregister(new User("admin", 0), target, borrowService));
+        assertThrows(IllegalStateException.class,
+                () -> service.unregister(new User("admin", 0), target, borrowService));
     }
 
     @Test

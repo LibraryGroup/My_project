@@ -4,7 +4,6 @@ import com.library.model.*;
 import com.library.repository.*;
 
 import org.junit.jupiter.api.Test;
-
 import java.time.LocalDate;
 import java.util.*;
 
@@ -34,11 +33,7 @@ class UserDeletionRulesTest {
         when(borrowRepo.findByUser(target)).thenReturn(List.of(r));
 
         assertThrows(IllegalStateException.class,
-                () -> userService.unregister(
-                        new User("admin", 0),
-                        target,
-                        borrowService
-                ));
+                () -> userService.unregister(new User("admin", 0), target, borrowService));
     }
 
     @Test
@@ -48,6 +43,7 @@ class UserDeletionRulesTest {
 
         User admin = new User("admin", 0);
         User target = new User("x", 50);
+
         when(userRepo.findByUsername("x")).thenReturn(target);
 
         assertThrows(IllegalStateException.class,
@@ -62,6 +58,7 @@ class UserDeletionRulesTest {
 
         User admin = new User("admin", 0);
         User target = new User("john", 0);
+
         when(repo.findByUsername("john")).thenReturn(target);
 
         BorrowRepository borrowRepo = mock(BorrowRepository.class);
@@ -70,9 +67,11 @@ class UserDeletionRulesTest {
 
         when(borrowRepo.findByUser(target)).thenReturn(new ArrayList<>());
 
+        when(repo.deleteUser("john")).thenReturn(true);
+
         boolean ok = userService.unregister(admin, target, borrowService);
 
         assertTrue(ok);
-        verify(repo, times(1)).deleteUser("john");
+        verify(repo).deleteUser("john");
     }
 }
