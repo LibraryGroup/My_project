@@ -18,10 +18,9 @@ public class FileBorrowRepository implements BorrowRepository {
     public FileBorrowRepository(String filename, MediaRepository mediaRepo) {
         this.filename = filename;
         this.mediaRepo = mediaRepo;
-        load();    
+        load();
     }
 
-   
     private void load() {
         File file = new File(filename);
         if (!file.exists()) return;
@@ -45,27 +44,17 @@ public class FileBorrowRepository implements BorrowRepository {
                 LocalDate returnDate =
                         p[5].equals("null") ? null : LocalDate.parse(p[5]);
 
-               
                 Media media = mediaRepo.findById(mediaId);
 
-                
                 if (media == null) {
-                    System.out.println("⚠ Warning: Media ID " + mediaId +
-                            " not found. Creating placeholder media.");
-
-                    media = new Book(
-                            mediaId,
-                            "Recovered Media " + mediaId,
-                            "Unknown",
-                            "N/A"
-                    );
-
+                    System.out.println("⚠ Media missing. Creating placeholder.");
+                    media = new Book(mediaId, "Recovered Media", "Unknown", "N/A");
                     mediaRepo.save(media);
                 }
 
-              
                 if (!returned) {
-                    media.setAvailable(false);
+                    media.decreaseCopy();
+                    mediaRepo.save(media);
                 }
 
                 User user = new User(username, 0);
@@ -85,20 +74,17 @@ public class FileBorrowRepository implements BorrowRepository {
         }
     }
 
-    
     @Override
     public void save(BorrowRecord r) {
         records.add(r);
         write();
     }
 
-   
     @Override
     public void update(BorrowRecord r) {
         write();
     }
 
-    
     @Override
     public List<BorrowRecord> findByUser(User user) {
         List<BorrowRecord> list = new ArrayList<>();
@@ -124,8 +110,6 @@ public class FileBorrowRepository implements BorrowRepository {
         return set;
     }
 
-   
-   
     private void write() {
         try (PrintWriter pw = new PrintWriter(new FileWriter(filename))) {
 
