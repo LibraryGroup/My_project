@@ -6,7 +6,10 @@ public abstract class Media {
 
     protected int id;
     protected String title;
-    protected boolean available = true;
+
+    // ======== New Multiple Copies Fields ========
+    protected int totalCopies = 1;        // عدد النسخ الكلي
+    protected int availableCopies = 1;    // عدد النسخ المتاحة للاستعارة
 
     protected FineStrategy fineStrategy;
 
@@ -15,30 +18,63 @@ public abstract class Media {
         this.title = title;
     }
 
+    // ===========================
+    // Getters & Setters
+    // ===========================
 
-    public int getId() {
-        return id;
+    public int getId() { return id; }
+
+    public void setId(int id) { this.id = id; }
+
+    public String getTitle() { return title; }
+
+    // ----- NEW -----
+    public int getTotalCopies() {
+        return totalCopies;
     }
 
-    public void setId(int id) {  
-        this.id = id;
+    public void setTotalCopies(int totalCopies) {
+        this.totalCopies = totalCopies;
+
+        // إذا زاد المجموع يجب تعديل المتاح أيضاً
+        if (availableCopies > totalCopies) {
+            availableCopies = totalCopies;
+        }
     }
 
-   
-    public String getTitle() {
-        return title;
+    public int getAvailableCopies() {
+        return availableCopies;
     }
 
-    
+    public void setAvailableCopies(int availableCopies) {
+        this.availableCopies = availableCopies;
+    }
+
+    // ===========================
+    // Availability Logic
+    // ===========================
+
     public boolean isAvailable() {
-        return available;
+        return availableCopies > 0;
     }
 
-    public void setAvailable(boolean available) {
-        this.available = available;
+    // عند الاستعارة ↓↓
+    public void decreaseCopy() {
+        if (availableCopies <= 0)
+            throw new IllegalStateException("No available copies left");
+        availableCopies--;
     }
 
-    
+    // عند الإرجاع ↓↓
+    public void increaseCopy() {
+        if (availableCopies < totalCopies)
+            availableCopies++;
+    }
+
+    // ===========================
+    // Fine Strategy
+    // ===========================
+
     public FineStrategy getFineStrategy() {
         return fineStrategy;
     }
@@ -47,7 +83,6 @@ public abstract class Media {
         this.fineStrategy = fineStrategy;
     }
 
-    
+    // Borrow period (book: 14 days, CD: 7 days)
     public abstract int getBorrowDays();
 }
-

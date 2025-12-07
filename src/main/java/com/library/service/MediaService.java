@@ -16,14 +16,18 @@ public class MediaService {
         this.repo = repo;
     }
 
-    public Media addBook(String title, String author, String isbn) {
+    public Media addBook(String title, String author, String isbn, int copies) {
         Book book = new Book(0, title, author, isbn);
+        book.setTotalCopies(copies);
+        book.setAvailableCopies(copies);
         repo.save(book);
         return book;
     }
 
-    public Media addCD(String title, String artist) {
+    public Media addCD(String title, String artist, int copies) {
         CD cd = new CD(0, title, artist);
+        cd.setTotalCopies(copies);
+        cd.setAvailableCopies(copies);
         repo.save(cd);
         return cd;
     }

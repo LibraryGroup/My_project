@@ -8,17 +8,17 @@ public class Book extends Media {
     private String isbn;
 
     public Book(int id, String title, String author, String isbn) {
-        super(id, title); 
+        super(id, title);
         this.author = author;
         this.isbn = isbn;
+        this.fineStrategy = new BookFineStrategy();
     }
 
     @Override
     public int getBorrowDays() {
-        return 28; 
+        return 28;
     }
 
-    
     public String getAuthor() {
         return author;
     }
@@ -27,19 +27,12 @@ public class Book extends Media {
         return isbn;
     }
 
-    
     public void setAuthor(String author) {
         this.author = author;
     }
 
     public void setIsbn(String isbn) {
         this.isbn = isbn;
-    }
-
-    
-    @Override
-    public void setId(int id) {
-        super.setId(id);
     }
 
     @Override
@@ -49,7 +42,8 @@ public class Book extends Media {
                 ", title='" + getTitle() + '\'' +
                 ", author='" + author + '\'' +
                 ", isbn='" + isbn + '\'' +
-                ", available=" + isAvailable() +
+                ", totalCopies=" + totalCopies +
+                ", availableCopies=" + availableCopies +
                 '}';
     }
 }
