@@ -3,37 +3,52 @@ name: Build and Analyze with SonarCloud
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # Checkout المشروع
+      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # -----------------------------
+      # تثبيت JDK 17
+      # -----------------------------
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # -----------------------------
+      # كاش لمكتبة Maven
+      # -----------------------------
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('Library_Managment_System/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-m2
 
+      # -----------------------------
+      # Build + Test للمشروع
+      # -----------------------------
       - name: Build and run tests
         run: mvn -B verify
-        working-directory: ${{ github.workspace }}/Library_Managment_System
+        working-directory: Library_Managment_System
 
+      # -----------------------------
+      # SonarCloud Scan
+      # -----------------------------
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         with:
