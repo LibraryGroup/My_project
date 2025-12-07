@@ -19,6 +19,9 @@ public class BorrowService {
         this.borrowRepo = borrowRepo;
     }
 
+    /**
+     * Borrow a media item for a user.
+     */
     public BorrowRecord borrow(User user, int mediaId, LocalDate borrowDate) {
 
         if (user == null)
@@ -27,6 +30,7 @@ public class BorrowService {
         if (borrowDate == null)
             throw new IllegalArgumentException("Borrow date required");
 
+        // Check overdue or unreturned
         for (BorrowRecord r : getBorrowRecordsForUser(user)) {
             if (!r.isReturned() && r.isOverdue(borrowDate)) {
                 throw new IllegalStateException("User has overdue items.");
@@ -44,22 +48,25 @@ public class BorrowService {
         if (!media.isAvailable())
             throw new IllegalStateException("No copies available");
 
-        // تحديد موعد الإرجاع
+        // Calculate due date
         LocalDate dueDate = borrowDate.plusDays(media.getBorrowDays());
 
-        // إنشاء سجل جديد
+        // Create record
         BorrowRecord record = new BorrowRecord(user, media, borrowDate, dueDate);
 
-        // ↓↓ حجز نسخة ↓↓
+        // Update media copies
         media.decreaseCopy();
         mediaRepo.save(media);
 
-        // حفظ السجل
+        // Save borrow record
         borrowRepo.save(record);
 
         return record;
     }
 
+    /**
+     * Return media item for a user.
+     */
     public boolean returnItem(String username, int mediaId, LocalDate returnDate) {
 
         for (BorrowRecord r : borrowRepo.findAll()) {
@@ -68,10 +75,11 @@ public class BorrowService {
                     && r.getMedia().getId() == mediaId
                     && !r.isReturned()) {
 
-                // إرجاع نسخة
+                // Increase media copy
                 r.getMedia().increaseCopy();
                 mediaRepo.save(r.getMedia());
 
+                // Mark as returned
                 r.setReturned(true);
                 r.setReturnDate(returnDate);
 
@@ -82,14 +90,24 @@ public class BorrowService {
         return false;
     }
 
+    /**
+     * Returns all borrow records for a user.
+     * This method is used by UserService.unregister
+     */
     public List<BorrowRecord> getBorrowRecordsForUser(User user) {
         return borrowRepo.findByUser(user);
     }
 
+    /**
+     * All users that have borrow records.
+     */
     public Set<User> getAllUsersWithRecords() {
         return borrowRepo.getAllUsers();
     }
 
+    /**
+     * Find overdue records by date.
+     */
     public List<BorrowRecord> findOverdueRecords(LocalDate date) {
         List<BorrowRecord> list = new ArrayList<>();
 
@@ -98,7 +116,6 @@ public class BorrowService {
                 list.add(r);
             }
         }
-
         return list;
     }
 }

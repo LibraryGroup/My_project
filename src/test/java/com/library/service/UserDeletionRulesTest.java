@@ -16,7 +16,6 @@ class UserDeletionRulesTest {
     @Test
     void cannotDeleteUserWithOverdue() {
 
-        // Mock repositories
         BorrowRepository borrowRepo = mock(BorrowRepository.class);
         MediaRepository mediaRepo = mock(MediaRepository.class);
 
@@ -25,19 +24,15 @@ class UserDeletionRulesTest {
         UserRepository userRepo = mock(UserRepository.class);
         UserService userService = new UserService(userRepo);
 
-        // Target user
         User target = new User("test", 0);
+        when(userRepo.findByUsername("test")).thenReturn(target);
 
-        // Mock overdue borrow
         BorrowRecord r = mock(BorrowRecord.class);
-        when(r.isReturned()).thenReturn(false);
-
-        // IMPORTANT FIX: specify type for any()
-        when(r.isOverdue(any(LocalDate.class))).thenReturn(true);
+        when(r.isReturned()).thenReturn(true);
+        when(r.isOverdue(any())).thenReturn(true);
 
         when(borrowRepo.findByUser(target)).thenReturn(List.of(r));
 
-        // Expect exception
         assertThrows(IllegalStateException.class,
                 () -> userService.unregister(
                         new User("admin", 0),
@@ -48,14 +43,15 @@ class UserDeletionRulesTest {
 
     @Test
     void cannotDeleteUserWithFines() {
-
-        UserService userService = new UserService(mock(UserRepository.class));
+        UserRepository userRepo = mock(UserRepository.class);
+        UserService userService = new UserService(userRepo);
 
         User admin = new User("admin", 0);
-        User target = new User("x", 50); // Has fines
+        User target = new User("x", 50);
+        when(userRepo.findByUsername("x")).thenReturn(target);
 
         assertThrows(IllegalStateException.class,
-                () -> userService.unregister(admin, target, null));
+                () -> userService.unregister(admin, target, mock(BorrowService.class)));
     }
 
     @Test
@@ -66,19 +62,17 @@ class UserDeletionRulesTest {
 
         User admin = new User("admin", 0);
         User target = new User("john", 0);
+        when(repo.findByUsername("john")).thenReturn(target);
 
         BorrowRepository borrowRepo = mock(BorrowRepository.class);
         MediaRepository mediaRepo = mock(MediaRepository.class);
         BorrowService borrowService = new BorrowService(mediaRepo, borrowRepo);
 
-        // No borrow records
         when(borrowRepo.findByUser(target)).thenReturn(new ArrayList<>());
 
         boolean ok = userService.unregister(admin, target, borrowService);
 
         assertTrue(ok);
-
-        // Should delete user exactly once
         verify(repo, times(1)).deleteUser("john");
     }
 }
