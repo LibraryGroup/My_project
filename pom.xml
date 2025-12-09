@@ -17,8 +17,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- SonarCloud -->
-        <sonar.organization>obadayasin</sonar.organization>
-        <sonar.projectKey>obadayasin_My_project</sonar.projectKey>
+        <sonar.organization>librarygroup</sonar.organization>
+        <sonar.projectKey>LibraryGroup_My_project</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- Testing -->
