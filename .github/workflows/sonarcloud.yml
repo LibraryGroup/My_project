@@ -18,11 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17
+      # 🔥 Use Java 21 instead of 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v3
