@@ -1,18 +1,23 @@
 package com.library.model;
 
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class CDTest {
 
+    
+    private static final String TITLE_BEST_HITS = "Best Hits";
+    private static final String TITLE_HITS = "Hits";
+    private static final String ARTIST_ADELE = "Adele";
+    private static final String ARTIST_NEW = "New Artist";
+
     @Test
     void cdFieldsShouldBeStoredCorrectly() {
-        CD cd = new CD(5, "Best Hits", "Adele");
+        CD cd = new CD(5, TITLE_BEST_HITS, ARTIST_ADELE);
 
         assertEquals(5, cd.getId());
-        assertEquals("Best Hits", cd.getTitle());
-        assertEquals("Adele", cd.getArtist());
+        assertEquals(TITLE_BEST_HITS, cd.getTitle());
+        assertEquals(ARTIST_ADELE, cd.getArtist());
     }
 
     @Test
@@ -24,17 +29,16 @@ class CDTest {
     @Test
     void updateArtistShouldWork() {
         CD cd = new CD(1, "X", "Y");
-        cd.setArtist("New Artist");
-
-        assertEquals("New Artist", cd.getArtist());
+        cd.setArtist(ARTIST_NEW);
+        assertEquals(ARTIST_NEW, cd.getArtist());
     }
 
     @Test
     void toStringShouldContainImportantFields() {
-        CD cd = new CD(1, "Hits", "Adele");
-
+        CD cd = new CD(1, TITLE_HITS, ARTIST_ADELE);
         String s = cd.toString();
-        assertTrue(s.contains("Hits"));
-        assertTrue(s.contains("Adele"));
+
+        assertTrue(s.contains(TITLE_HITS));
+        assertTrue(s.contains(ARTIST_ADELE));
     }
 }
