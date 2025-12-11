@@ -29,18 +29,17 @@ class FileUserRepositoryTest {
     void saveAndFindUserShouldWork() {
         User u = new User("moh", 10);
         repo.save(u);
-
         User found = repo.findByUsername("moh");
-        assertNotNull(found, "User should be found after saving");
-        assertEquals(10, found.getFineBalance(), "Fine balance should match");
+        assertNotNull(found);
+        assertEquals(10, found.getFineBalance());
     }
 
     @Test
     void deleteUserShouldRemoveUser() {
         repo.save(new User("moh", 0));
-
-        assertTrue(repo.deleteUser("moh"), "User deletion should return true");
-        assertNull(repo.findByUsername("moh"), "Deleted user should not be found");
+        assertTrue(repo.deleteUser("moh"));
+        assertNull(repo.findByUsername("moh"));
     }
 }
+
 
