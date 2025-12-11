@@ -1,22 +1,19 @@
 package com.library.model;
-import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class BookTest {
 
-    
-    private static final String TITLE_CLEAN_CODE = "Clean Code";
-    private static final String AUTHOR_MARTIN = "Martin";
-    private static final String ISBN_111 = "111";
-
     @Test
     void bookFieldsShouldBeStoredCorrectly() {
-        Book b = new Book(10, TITLE_CLEAN_CODE, AUTHOR_MARTIN, ISBN_111);
+        Book b = new Book(10, "Clean Code", "Martin", "111");
 
         assertEquals(10, b.getId());
-        assertEquals(TITLE_CLEAN_CODE, b.getTitle());
-        assertEquals(AUTHOR_MARTIN, b.getAuthor());
-        assertEquals(ISBN_111, b.getIsbn());
+        assertEquals("Clean Code", b.getTitle());
+        assertEquals("Martin", b.getAuthor());
+        assertEquals("111", b.getIsbn());
     }
 
     @Test
@@ -28,6 +25,7 @@ class BookTest {
     @Test
     void settersShouldWork() {
         Book b = new Book(1, "A", "B", "C");
+
         b.setAuthor("New A");
         b.setIsbn("999");
 
@@ -37,11 +35,11 @@ class BookTest {
 
     @Test
     void toStringShouldContainImportantFields() {
-        Book b = new Book(1, TITLE_CLEAN_CODE, AUTHOR_MARTIN, ISBN_111);
-        String s = b.toString();
+        Book b = new Book(1, "Clean Code", "Martin", "111");
 
-        assertTrue(s.contains(TITLE_CLEAN_CODE));
-        assertTrue(s.contains(AUTHOR_MARTIN));
-        assertTrue(s.contains(ISBN_111));
+        String s = b.toString();
+        assertTrue(s.contains("Clean Code"));
+        assertTrue(s.contains("Martin"));
+        assertTrue(s.contains("111"));
     }
 }
