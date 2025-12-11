@@ -12,7 +12,6 @@ class FineServiceTest {
     private FineService fineService;
     private FakeUserRepository repo;
 
-    
     static class FakeUserRepository implements UserRepository {
         User saved;
         User store;
@@ -37,7 +36,7 @@ class FineServiceTest {
     @BeforeEach
     void setUp() {
         repo = new FakeUserRepository();
-        repo.store = new User("ahmed", 50.0);   
+        repo.store = new User("ahmed", 50.0);
         fineService = new FineService(repo);
     }
 
@@ -46,9 +45,7 @@ class FineServiceTest {
         boolean ok = fineService.payFine("ahmed", 20.0);
 
         assertFalse(ok);
-        
         assertEquals(50.0, repo.store.getFineBalance(), 0.001);
-        
         assertNull(repo.saved);
     }
 
@@ -72,7 +69,7 @@ class FineServiceTest {
 
     @Test
     void payFineForUnknownUserShouldFail() {
-        repo.store = null;  
+        repo.store = null;
 
         boolean ok = fineService.payFine("unknown", 50.0);
 

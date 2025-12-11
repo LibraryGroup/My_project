@@ -9,14 +9,12 @@ public class CD extends Media {
     public CD(int id, String title, String artist) {
         super(id, title);
         this.artist = artist;
-
-      
         this.fineStrategy = new CDFineStrategy();
     }
 
     @Override
     public int getBorrowDays() {
-        return 7; // مدة استعارة CD
+        return 7;
     }
 
     public String getArtist() {
@@ -33,7 +31,8 @@ public class CD extends Media {
                 "id=" + getId() +
                 ", title='" + getTitle() + '\'' +
                 ", artist='" + artist + '\'' +
-                ", available=" + isAvailable() +
+                ", totalCopies=" + totalCopies +
+                ", availableCopies=" + availableCopies +
                 '}';
     }
 }

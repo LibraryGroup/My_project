@@ -18,7 +18,6 @@ public class FileMediaRepository implements MediaRepository {
         load();
     }
 
-   
     private void load() {
         File file = new File(filename);
         if (!file.exists()) return;
@@ -27,8 +26,6 @@ public class FileMediaRepository implements MediaRepository {
 
             String line;
             while ((line = br.readLine()) != null) {
-
-               
 
                 String[] p = line.split(",");
 
@@ -41,19 +38,23 @@ public class FileMediaRepository implements MediaRepository {
                 if (type.equals("BOOK")) {
                     String author = p[3];
                     String isbn = p[4];
-                    boolean available = Boolean.parseBoolean(p[5]);
+                    int total = Integer.parseInt(p[5]);
+                    int available = Integer.parseInt(p[6]);
 
                     Book b = new Book(id, title, author, isbn);
-                    b.setAvailable(available);
+                    b.setTotalCopies(total);
+                    b.setAvailableCopies(available);
                     m = b;
                 }
 
                 else if (type.equals("CD")) {
                     String artist = p[3];
-                    boolean available = Boolean.parseBoolean(p[4]);
+                    int total = Integer.parseInt(p[4]);
+                    int available = Integer.parseInt(p[5]);
 
                     CD cd = new CD(id, title, artist);
-                    cd.setAvailable(available);
+                    cd.setTotalCopies(total);
+                    cd.setAvailableCopies(available);
                     m = cd;
                 }
 
@@ -68,7 +69,6 @@ public class FileMediaRepository implements MediaRepository {
         }
     }
 
-   
     private void write() {
         try (PrintWriter pw = new PrintWriter(new FileWriter(filename))) {
 
@@ -80,7 +80,8 @@ public class FileMediaRepository implements MediaRepository {
                             b.getTitle() + "," +
                             b.getAuthor() + "," +
                             b.getIsbn() + "," +
-                            b.isAvailable());
+                            b.getTotalCopies() + "," +
+                            b.getAvailableCopies());
                 }
 
                 else if (m instanceof CD cd) {
@@ -88,7 +89,8 @@ public class FileMediaRepository implements MediaRepository {
                             cd.getId() + "," +
                             cd.getTitle() + "," +
                             cd.getArtist() + "," +
-                            cd.isAvailable());
+                            cd.getTotalCopies() + "," +
+                            cd.getAvailableCopies());
                 }
             }
 
@@ -96,8 +98,6 @@ public class FileMediaRepository implements MediaRepository {
             e.printStackTrace();
         }
     }
-
-    
 
     @Override
     public Media findById(int id) {
@@ -125,4 +125,5 @@ public class FileMediaRepository implements MediaRepository {
         mediaMap.remove(id);
         write();
     }
+   //hello world
 }
