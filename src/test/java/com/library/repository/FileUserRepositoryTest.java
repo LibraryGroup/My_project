@@ -5,23 +5,25 @@ import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FileUserRepositoryTest {
 
-    private File temp;
+    private Path tempFile;
     private FileUserRepository repo;
 
     @BeforeEach
     void init() throws IOException {
-        temp = File.createTempFile("user_test", ".txt");
-        repo = new FileUserRepository(temp.getAbsolutePath());
+        tempFile = Files.createTempFile("user_test", ".txt");
+        repo = new FileUserRepository(tempFile.toAbsolutePath().toString());
     }
 
     @AfterEach
-    void clean() {
-        temp.delete();
+    void clean() throws IOException {
+        Files.deleteIfExists(tempFile);
     }
 
     @Test
@@ -37,6 +39,7 @@ class FileUserRepositoryTest {
     @Test
     void deleteUserShouldRemoveUser() {
         repo.save(new User("moh", 0));
+
         assertTrue(repo.deleteUser("moh"));
         assertNull(repo.findByUsername("moh"));
     }
