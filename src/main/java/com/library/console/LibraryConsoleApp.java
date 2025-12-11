@@ -4,18 +4,15 @@ import com.library.communication.EmailServer;
 import com.library.communication.MockEmailServer;
 import com.library.model.Media;
 import com.library.model.User;
-
-import com.library.notifications.EmailNotifier;
-import com.library.notifications.SMSNotifier;
-import com.library.notifications.PushNotifier;
 import com.library.notifications.ConsoleNotifier;
-
+import com.library.notifications.EmailNotifier;
+import com.library.notifications.PushNotifier;
+import com.library.notifications.SMSNotifier;
 import com.library.repository.FileAdminRepository;
-import com.library.repository.FileUserRepository;
 import com.library.repository.FileBorrowRepository;
 import com.library.repository.FileMediaRepository;
+import com.library.repository.FileUserRepository;
 import com.library.repository.UserRepository;
-
 import com.library.service.*;
 
 import java.time.LocalDate;
@@ -29,25 +26,18 @@ public class LibraryConsoleApp {
     public static void main(String[] args) {
         System.out.println("Working directory = " + System.getProperty("user.dir"));
 
-        // ===== Repositories =====
         FileAdminRepository adminRepo = new FileAdminRepository("admins.txt");
         FileMediaRepository mediaRepo = new FileMediaRepository("media.txt");
-
         UserRepository userRepo = new FileUserRepository("users.txt");
-
-        // 🔥 Borrow repository
         FileBorrowRepository borrowRepo = new FileBorrowRepository("borrow.txt", mediaRepo);
 
-        // ===== Services =====
         AuthService authService = new AuthService(adminRepo);
         MediaService mediaService = new MediaService(mediaRepo);
         BorrowService borrowService = new BorrowService(mediaRepo, borrowRepo);
         FineService fineService = new FineService(userRepo);
 
-        // ===== Notification System =====
         EmailServer emailServer = new MockEmailServer();
         ReminderService reminderService = new ReminderService(borrowService);
-
         reminderService.addObserver(new EmailNotifier(emailServer));
         reminderService.addObserver(new SMSNotifier());
         reminderService.addObserver(new PushNotifier());
@@ -56,7 +46,6 @@ public class LibraryConsoleApp {
         UserService userService = new UserService(userRepo);
 
         boolean exit = false;
-
         System.out.println("===== Library Management System =====");
 
         while (!exit) {
@@ -91,18 +80,13 @@ public class LibraryConsoleApp {
                     default: System.out.println("❌ خيار غير صحيح.");
                 }
             }
-
             System.out.println();
         }
-
         System.out.println("✅ تم إغلاق النظام.");
     }
 
-    // ======================= MENU =======================
-
     private static void printMenu(boolean loggedIn) {
         System.out.println("----------------------------------");
-
         if (!loggedIn) {
             System.out.println("1) Admin Login");
             System.out.println("2) Register User");
@@ -121,8 +105,6 @@ public class LibraryConsoleApp {
             System.out.println("9) Exit");
         }
     }
-
-    // ======================= INPUT HELPERS =======================
 
     private static int readInt(String message) {
         while (true) {
@@ -151,46 +133,36 @@ public class LibraryConsoleApp {
         return scanner.nextLine().trim();
     }
 
-    // ======================= HANDLERS =======================
-
     private static void handleLogin(AuthService authService) {
         String username = readText("اسم المستخدم: ");
         String password = readText("كلمة المرور: ");
-
-        if (authService.login(username, password))
+        if (authService.login(username, password)) {
             System.out.println("✅ تسجيل دخول ناجح.");
-        else
+        } else {
             System.out.println("❌ فشل تسجيل الدخول.");
+        }
     }
 
     private static void handleRegister(UserRepository userRepo) {
         String username = readText("اسم المستخدم الجديد: ");
-
         if (username.contains(",") || username.contains(" ")) {
             System.out.println("❌ اسم المستخدم يجب أن لا يحتوي فواصل أو مسافات.");
             return;
         }
-
         if (userRepo.findByUsername(username) != null) {
             System.out.println("❌ المستخدم موجود مسبقًا.");
             return;
         }
-
         double balance = readDouble("أدخل الغرامة الابتدائية (0 إذا لا يوجد): ");
-
         User user = new User(username, balance);
         userRepo.save(user);
-
         System.out.println("✅ تم إنشاء المستخدم بنجاح.");
     }
-
-    // ======================= ADD MEDIA WITH COPIES =======================
 
     private static void handleAddMedia(MediaService mediaService) {
         System.out.println("اختر النوع:");
         System.out.println("1) كتاب");
         System.out.println("2) CD");
-
         String type = readText("اختيار: ");
         String title = readText("العنوان: ");
         int copies = readInt("عدد النسخ: ");
@@ -202,13 +174,11 @@ public class LibraryConsoleApp {
                 Media book = mediaService.addBook(title, author, isbn, copies);
                 System.out.println("✅ تمت إضافة كتاب: " + book);
                 break;
-
             case "2":
                 String artist = readText("الفنان: ");
                 Media cd = mediaService.addCD(title, artist, copies);
                 System.out.println("✅ تمت إضافة CD: " + cd);
                 break;
-
             default:
                 System.out.println("❌ خيار غير صحيح.");
         }
@@ -217,24 +187,21 @@ public class LibraryConsoleApp {
     private static void handleSearch(MediaService mediaService) {
         String keyword = readText("أدخل كلمة للبحث: ");
         List<Media> results = mediaService.searchByTitle(keyword);
-
-        if (results.isEmpty())
+        if (results.isEmpty()) {
             System.out.println("لا توجد نتائج.");
-        else
+        } else {
             results.forEach(System.out::println);
+        }
     }
 
     private static void handleBorrow(BorrowService borrowService, UserRepository userRepo) {
         String username = readText("اسم المستخدم: ");
         User user = userRepo.findByUsername(username);
-
         if (user == null) {
             System.out.println("❌ المستخدم غير موجود.");
             return;
         }
-
         int id = readInt("ID العنصر: ");
-
         try {
             borrowService.borrow(user, id, LocalDate.now());
             System.out.println("✅ تمت عملية الاستعارة.");
@@ -246,7 +213,6 @@ public class LibraryConsoleApp {
     private static void handleReturn(BorrowService borrowService) {
         String username = readText("اسم المستخدم: ");
         int id = readInt("ID العنصر: ");
-
         try {
             borrowService.returnItem(username, id, LocalDate.now());
             System.out.println("✅ تمت عملية الإرجاع.");
@@ -258,25 +224,25 @@ public class LibraryConsoleApp {
     private static void handlePayFine(FineService fineService) {
         String username = readText("اسم المستخدم: ");
         double amount = readDouble("المبلغ: ");
-
-        if (fineService.payFine(username, amount))
+        if (fineService.payFine(username, amount)) {
             System.out.println("✅ تم دفع الغرامة.");
-        else
+        } else {
             System.out.println("❌ فشل دفع الغرامة.");
+        }
     }
 
     private static void handleUnregister(UserService userService, BorrowService borrowService) {
         String adminName = readText("Admin username: ");
         User admin = new User(adminName, 0);
-
         String targetName = readText("User to unregister: ");
         User target = new User(targetName, 0);
 
         try {
-            if (userService.unregister(admin, target, borrowService))
+            if (userService.unregister(admin, target, borrowService)) {
                 System.out.println("✅ تم حذف المستخدم.");
-            else
+            } else {
                 System.out.println("❌ لم يتم الحذف.");
+            }
         } catch (Exception e) {
             System.out.println("❌ خطأ: " + e.getMessage());
         }
@@ -290,14 +256,12 @@ public class LibraryConsoleApp {
     private static void handleViewBorrowed(BorrowService borrowService, UserRepository userRepo) {
         String username = readText("اسم المستخدم: ");
         User user = userRepo.findByUsername(username);
-
         if (user == null) {
             System.out.println("❌ المستخدم غير موجود.");
             return;
         }
 
         List<?> records = borrowService.getBorrowRecordsForUser(user);
-
         if (records.isEmpty()) {
             System.out.println("لا توجد استعارات حالية.");
         } else {
