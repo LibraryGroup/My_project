@@ -10,18 +10,18 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <!-- Java version for GitHub Actions -->
+        <!-- Java 21 -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- SonarCloud -->
-        <sonar.organization>librarygroup</sonar.organization>
-        <sonar.projectKey>LibraryGroup_My_project</sonar.projectKey>
+        <sonar.organization>obadayasin</sonar.organization>
+        <sonar.projectKey>obadayasin_My_project</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
-        <!-- Testing -->
+        <!-- Versions -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <mockito.version>5.11.0</mockito.version>
     </properties>
@@ -56,7 +56,7 @@
     <build>
         <plugins>
 
-            <!-- Surefire لتشغيل JUnit 5 -->
+            <!-- JUnit 5 (Surefire) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -74,17 +74,17 @@
 
                 <executions>
 
-                    <!-- Inject agent for coverage -->
+                    <!-- Inject Agent -->
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
 
-                    <!-- Generate coverage report -->
+                    <!-- Generate Coverage Report -->
                     <execution>
                         <id>jacoco-report</id>
-                        <phase>prepare-package</phase>
+                        <phase>verify</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
@@ -102,7 +102,15 @@
 
             </plugin>
 
+            <!-- SonarCloud Scanner -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.9.1.2184</version>
+            </plugin>
+
         </plugins>
     </build>
 
 </project>
+

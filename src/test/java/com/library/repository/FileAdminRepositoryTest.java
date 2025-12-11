@@ -17,7 +17,7 @@ class FileAdminRepositoryTest {
     void setUp() throws IOException {
         tempFile = File.createTempFile("admins_test", ".txt");
 
-       
+        // كتابة بيانات تجريبية للملف
         Files.writeString(tempFile.toPath(),
                 "admin,1234\n" +
                 "user1,pass1\n");
