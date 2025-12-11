@@ -25,7 +25,7 @@ class FileBorrowRepositoryTest {
 
         mediaRepo = mock(MediaRepository.class);
 
-        // عند التحميل repository يحتاج mediaRepo.findById() → نرجع null لأن الملف فاضي
+        
         when(mediaRepo.findById(anyInt())).thenReturn(null);
 
         repo = new FileBorrowRepository(tempFile.getAbsolutePath(), mediaRepo);
@@ -117,12 +117,12 @@ class FileBorrowRepositoryTest {
 
         Files.writeString(tempFile.toPath(), content);
 
-        // إنشاء Media حقيقية وليس mock
+        
         Media realMedia = new Book(10, "Loaded Book", "Author", "ISBN");
 
         when(mediaRepo.findById(10)).thenReturn(realMedia);
 
-        // إعادة تحميل repo (load() تعمل الآن بدون مشاكل)
+        
         FileBorrowRepository loadedRepo =
                 new FileBorrowRepository(tempFile.getAbsolutePath(), mediaRepo);
 
@@ -138,7 +138,7 @@ class FileBorrowRepositoryTest {
         assertEquals(LocalDate.of(2025, 1, 10), r.getDueDate());
         assertFalse(r.isReturned());
 
-        // التأكد أن decreaseCopy عملت
+        
         assertEquals(0, realMedia.getAvailableCopies()); // لأنه كان 1 ونقص
     }
 

@@ -8,9 +8,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests for InMemoryBookRepository to increase repository coverage.
- */
+
 class InMemoryBookRepositoryTest {
 
     private InMemoryBookRepository repo;
@@ -31,7 +29,7 @@ class InMemoryBookRepositoryTest {
         List<Book> all = repo.findAll();
 
         assertEquals(2, all.size());
-        // بحسب الكود: nextId يبدأ من 1 ويتزايد
+        
         assertEquals(1, all.get(0).getId());
         assertEquals(2, all.get(1).getId());
     }
@@ -66,8 +64,8 @@ class InMemoryBookRepositoryTest {
         Book target = new Book(0, "Clean Code", "Robert Martin", "111");
         repo.add(target);
 
-        assertNotNull(repo.searchByIsbn("111"));  // موجود
-        assertNull(repo.searchByIsbn("999"));     // غير موجود
+        assertNotNull(repo.searchByIsbn("111"));  
+        assertNull(repo.searchByIsbn("999"));     
     }
 
     @Test
@@ -76,7 +74,7 @@ class InMemoryBookRepositoryTest {
 
         List<Book> all = repo.findAll();
 
-        // حسب الكود يرجع Collections.unmodifiableList(..)
+        
         assertThrows(UnsupportedOperationException.class,
                 () -> all.add(new Book(0, "Extra", "Someone", "999")));
     }
