@@ -28,7 +28,7 @@ class CDTest {
         cd.setArtist("New Artist");
         assertEquals("New Artist", cd.getArtist());
     }
-
+//ss
     @Test
     void toStringShouldContainImportantFields() {
         CD cd = new CD(1, "Hits", ARTIST);
