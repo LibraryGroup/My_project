@@ -13,20 +13,13 @@ public class FileUserRepository implements UserRepository {
 
     public FileUserRepository(String filename) {
         File file = new File(filename);
-
-       
         this.filePath = file.getAbsolutePath();
 
-     
-        System.out.println("📌 [UserRepo] Using file: " + this.filePath);
-
-        
         try {
             if (!file.exists()) {
                 file.createNewFile();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
 
         loadFromFile();
@@ -40,7 +33,7 @@ public class FileUserRepository implements UserRepository {
     @Override
     public void save(User user) {
         users.put(user.getUsername(), user);
-        writeToFile(); 
+        writeToFile();
     }
 
     @Override
@@ -52,24 +45,38 @@ public class FileUserRepository implements UserRepository {
         return false;
     }
 
-    
     private void loadFromFile() {
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 2) {
-                    users.put(parts[0], new User(parts[0], Double.parseDouble(parts[1])));
+
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
                 }
+
+                String[] parts = line.split(",");
+                if (parts.length != 2) {
+                    continue;
+                }
+
+                String username = parts[0];
+                double fine;
+
+                try {
+                    fine = Double.parseDouble(parts[1]);
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+
+                users.put(username, new User(username, fine));
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
         }
     }
 
-   
     private void writeToFile() {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
 
@@ -77,10 +84,7 @@ public class FileUserRepository implements UserRepository {
                 writer.println(u.getUsername() + "," + u.getFineBalance());
             }
 
-            System.out.println("✅ [UserRepo] File updated successfully.");
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
     }
 }

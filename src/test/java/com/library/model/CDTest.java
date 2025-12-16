@@ -1,18 +1,19 @@
 package com.library.model;
 
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class CDTest {
 
+    private static final String ARTIST = "Adele";
+
     @Test
     void cdFieldsShouldBeStoredCorrectly() {
-        CD cd = new CD(5, "Best Hits", "Adele");
+        CD cd = new CD(5, "Best Hits", ARTIST);
 
         assertEquals(5, cd.getId());
         assertEquals("Best Hits", cd.getTitle());
-        assertEquals("Adele", cd.getArtist());
+        assertEquals(ARTIST, cd.getArtist());
     }
 
     @Test
@@ -25,16 +26,16 @@ class CDTest {
     void updateArtistShouldWork() {
         CD cd = new CD(1, "X", "Y");
         cd.setArtist("New Artist");
-
         assertEquals("New Artist", cd.getArtist());
     }
 
     @Test
     void toStringShouldContainImportantFields() {
-        CD cd = new CD(1, "Hits", "Adele");
-
+        CD cd = new CD(1, "Hits", ARTIST);
         String s = cd.toString();
+
         assertTrue(s.contains("Hits"));
-        assertTrue(s.contains("Adele"));
+        assertTrue(s.contains(ARTIST));
     }
 }
+

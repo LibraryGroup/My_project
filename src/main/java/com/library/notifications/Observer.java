@@ -5,4 +5,3 @@ import com.library.model.User;
 public interface Observer {
     void notify(User user, String message);
 }
-

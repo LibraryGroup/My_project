@@ -1,2 +1,5 @@
 BOOK,1,Recovered Media,Unknown,N/A,1,0
 BOOK,2,Recovered Media,Unknown,N/A,1,0
+BOOK,3,lk,al,123,1234,1234
+BOOK,4,al,ak,12,1,0
+BOOK,5,als,alk,12,5,5

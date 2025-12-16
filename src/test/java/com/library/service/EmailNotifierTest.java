@@ -1,6 +1,6 @@
 package com.library.service;
-import com.library.notifications.*;
 
+import com.library.notifications.EmailNotifier;
 import com.library.communication.EmailServer;
 import com.library.model.EmailMessage;
 import com.library.model.User;
@@ -16,24 +16,24 @@ class EmailNotifierTest {
     @Test
     void emailNotifierShouldSendEmail() {
 
-        // Arrange
         EmailServer emailServer = mock(EmailServer.class);
         EmailNotifier notifier = new EmailNotifier(emailServer);
 
         User user = new User("mohammad", 0.0);
+        user.setEmail("mohammad@test.com");
+
         String message = "You have overdue books!";
 
-        // Act
         notifier.notify(user, message);
 
-        // Assert
-        ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+        ArgumentCaptor<EmailMessage> captor =
+                ArgumentCaptor.forClass(EmailMessage.class);
 
         verify(emailServer, times(1)).send(captor.capture());
 
         EmailMessage sent = captor.getValue();
 
-        assertEquals("mohammad", sent.getTo());
+        assertEquals("mohammad@test.com", sent.getTo());
         assertEquals("You have overdue books!", sent.getContent());
     }
 }

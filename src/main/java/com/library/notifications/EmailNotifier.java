@@ -15,9 +15,13 @@ public class EmailNotifier implements Observer {
     @Override
     public void notify(User user, String message) {
 
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            return; // ما في إيميل
+        }
+
         EmailMessage email = new EmailMessage(
-                user.getUsername(),   
-                message               
+                user.getEmail(),
+                message
         );
 
         emailServer.send(email);

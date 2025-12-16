@@ -5,6 +5,7 @@ import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,8 +21,8 @@ class FileUserRepositoryTest {
     }
 
     @AfterEach
-    void clean() {
-        temp.delete();
+    void clean() throws IOException {
+        Files.delete(temp.toPath());
     }
 
     @Test
@@ -37,7 +38,9 @@ class FileUserRepositoryTest {
     @Test
     void deleteUserShouldRemoveUser() {
         repo.save(new User("moh", 0));
+
         assertTrue(repo.deleteUser("moh"));
         assertNull(repo.findByUsername("moh"));
     }
 }
+

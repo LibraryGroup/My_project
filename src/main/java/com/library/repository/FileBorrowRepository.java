@@ -25,14 +25,24 @@ public class FileBorrowRepository implements BorrowRepository {
         File file = new File(filename);
         if (!file.exists()) return;
 
-        System.out.println("📌 [BorrowRepo] Loading file: " + file.getAbsolutePath());
-
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 
             String line;
             while ((line = br.readLine()) != null) {
 
+                line = line.trim();
+
+               
+                if (line.isEmpty()) {
+                    continue;
+                }
+
                 String[] p = line.split(",");
+
+                
+                if (p.length < 6) {
+                    continue;
+                }
 
                 String username = p[0];
                 int mediaId = Integer.parseInt(p[1]);
@@ -46,15 +56,20 @@ public class FileBorrowRepository implements BorrowRepository {
 
                 Media media = mediaRepo.findById(mediaId);
 
+                
                 if (media == null) {
-                    System.out.println("⚠ Media missing. Creating placeholder.");
                     media = new Book(mediaId, "Recovered Media", "Unknown", "N/A");
                     mediaRepo.save(media);
                 }
 
+                
                 if (!returned) {
-                    media.decreaseCopy();
-                    mediaRepo.save(media);
+                    try {
+                        media.decreaseCopy();
+                        mediaRepo.save(media);
+                    } catch (IllegalStateException ignored) {
+                        
+                    }
                 }
 
                 User user = new User(username, 0);
@@ -69,8 +84,8 @@ public class FileBorrowRepository implements BorrowRepository {
                 records.add(record);
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
+            
         }
     }
 
@@ -124,10 +139,8 @@ public class FileBorrowRepository implements BorrowRepository {
                 );
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
+          
         }
     }
 }
-
-

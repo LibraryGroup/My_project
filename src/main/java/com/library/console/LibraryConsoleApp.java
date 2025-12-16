@@ -1,21 +1,16 @@
 package com.library.console;
 
 import com.library.communication.EmailServer;
-import com.library.communication.MockEmailServer;
+import com.library.communication.SMTPEmailServer;
 import com.library.model.Media;
 import com.library.model.User;
-
-import com.library.notifications.EmailNotifier;
-import com.library.notifications.SMSNotifier;
-import com.library.notifications.PushNotifier;
 import com.library.notifications.ConsoleNotifier;
-
+import com.library.notifications.EmailNotifier;
 import com.library.repository.FileAdminRepository;
-import com.library.repository.FileUserRepository;
 import com.library.repository.FileBorrowRepository;
 import com.library.repository.FileMediaRepository;
+import com.library.repository.FileUserRepository;
 import com.library.repository.UserRepository;
-
 import com.library.service.*;
 
 import java.time.LocalDate;
@@ -27,282 +22,247 @@ public class LibraryConsoleApp {
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        System.out.println("Working directory = " + System.getProperty("user.dir"));
 
-        // ===== Repositories =====
         FileAdminRepository adminRepo = new FileAdminRepository("admins.txt");
         FileMediaRepository mediaRepo = new FileMediaRepository("media.txt");
-
         UserRepository userRepo = new FileUserRepository("users.txt");
-
-        // 🔥 Borrow repository
         FileBorrowRepository borrowRepo = new FileBorrowRepository("borrow.txt", mediaRepo);
 
-        // ===== Services =====
         AuthService authService = new AuthService(adminRepo);
         MediaService mediaService = new MediaService(mediaRepo);
         BorrowService borrowService = new BorrowService(mediaRepo, borrowRepo);
         FineService fineService = new FineService(userRepo);
-
-        // ===== Notification System =====
-        EmailServer emailServer = new MockEmailServer();
-        ReminderService reminderService = new ReminderService(borrowService);
-
-        reminderService.addObserver(new EmailNotifier(emailServer));
-        reminderService.addObserver(new SMSNotifier());
-        reminderService.addObserver(new PushNotifier());
-        reminderService.addObserver(new ConsoleNotifier());
-
         UserService userService = new UserService(userRepo);
 
-        boolean exit = false;
+        ReminderService reminderService = new ReminderService(borrowService);
 
+        EmailServer emailServer = new SMTPEmailServer(
+                "smtp.gmail.com",
+                587,
+                "saa123sud53@gmail.com",
+                "wdpn kzsp dcjs lfzd"
+        );
+
+        reminderService.addObserver(new EmailNotifier(emailServer));
+        reminderService.addObserver(new ConsoleNotifier());
+
+        boolean exit = false;
         System.out.println("===== Library Management System =====");
 
         while (!exit) {
             printMenu(authService.isLoggedIn());
-            System.out.print("اختر خيار: ");
-
+            System.out.print("Choose option: ");
             String choice = scanner.nextLine().trim();
             System.out.println();
 
             if (!authService.isLoggedIn()) {
                 switch (choice) {
-                    case "1": handleLogin(authService); break;
-                    case "2": handleRegister(userRepo); break;
-                    case "3": handleSearch(mediaService); break;
-                    case "4": exit = true; break;
-                    default: System.out.println("❌ خيار غير صحيح.");
+                    case "1" -> handleLogin(authService);
+                    case "2" -> handleRegister(userRepo);
+                    case "3" -> handleSearch(mediaService);
+                    case "4" -> exit = true;
+                    default -> System.out.println("❌ Invalid option.");
                 }
             } else {
                 switch (choice) {
-                    case "1": handleAddMedia(mediaService); break;
-                    case "2": handleBorrow(borrowService, userRepo); break;
-                    case "3": handleReturn(borrowService); break;
-                    case "4": handlePayFine(fineService); break;
-                    case "5": handleUnregister(userService, borrowService); break;
-                    case "6": handleSendReminders(reminderService); break;
-                    case "7": handleViewBorrowed(borrowService, userRepo); break;
-                    case "8": 
+                    case "1" -> handleAddMedia(mediaService);
+                    case "2" -> handleBorrow(borrowService, userRepo);
+                    case "3" -> handleReturn(borrowService);
+                    case "4" -> handlePayFine(fineService);
+                    case "5" -> handleUnregister(userService, borrowService);
+                    case "6" -> handleSendReminders(reminderService, emailServer);
+                    case "7" -> handleViewBorrowed(borrowService, userRepo);
+                    case "8" -> {
                         authService.logout();
-                        System.out.println("✅ تم تسجيل الخروج.");
-                        break;
-                    case "9": exit = true; break;
-                    default: System.out.println("❌ خيار غير صحيح.");
+                        System.out.println("✅ Logged out successfully.");
+                    }
+                    case "9" -> exit = true;
+                    default -> System.out.println("❌ Invalid option.");
                 }
             }
-
             System.out.println();
         }
 
-        System.out.println("✅ تم إغلاق النظام.");
+        System.out.println("System closed.");
     }
-
-    // ======================= MENU =======================
 
     private static void printMenu(boolean loggedIn) {
         System.out.println("----------------------------------");
-
         if (!loggedIn) {
             System.out.println("1) Admin Login");
             System.out.println("2) Register User");
             System.out.println("3) Search Media");
             System.out.println("4) Exit");
         } else {
-            System.out.println("** Admin Menu **");
-            System.out.println("1) Add Media (Book / CD)");
+            System.out.println("1) Add Media");
             System.out.println("2) Borrow Media");
             System.out.println("3) Return Media");
             System.out.println("4) Pay Fine");
             System.out.println("5) Unregister User");
-            System.out.println("6) Send Overdue Reminders");
+            System.out.println("6) Send Overdue Email Reminders");
             System.out.println("7) View User Borrowed Items");
             System.out.println("8) Logout");
             System.out.println("9) Exit");
         }
     }
 
-    // ======================= INPUT HELPERS =======================
-
-    private static int readInt(String message) {
-        while (true) {
-            System.out.print(message);
-            try {
-                return Integer.parseInt(scanner.nextLine().trim());
-            } catch (NumberFormatException e) {
-                System.out.println("❌ يجب إدخال رقم صحيح.");
-            }
-        }
-    }
-
-    private static double readDouble(String message) {
-        while (true) {
-            System.out.print(message);
-            try {
-                return Double.parseDouble(scanner.nextLine().trim());
-            } catch (NumberFormatException e) {
-                System.out.println("❌ يجب إدخال رقم مثل: 20 أو 15.5");
-            }
-        }
-    }
-
-    private static String readText(String message) {
-        System.out.print(message);
+    private static String readText(String msg) {
+        System.out.print(msg);
         return scanner.nextLine().trim();
     }
 
-    // ======================= HANDLERS =======================
+    private static int readInt(String msg) {
+        while (true) {
+            try {
+                return Integer.parseInt(readText(msg));
+            } catch (NumberFormatException e) {
+                System.out.println("❌ Enter a valid number.");
+            }
+        }
+    }
+
+    private static double readDouble(String msg) {
+        while (true) {
+            try {
+                return Double.parseDouble(readText(msg));
+            } catch (NumberFormatException e) {
+                System.out.println("❌ Enter a valid number.");
+            }
+        }
+    }
 
     private static void handleLogin(AuthService authService) {
-        String username = readText("اسم المستخدم: ");
-        String password = readText("كلمة المرور: ");
-
-        if (authService.login(username, password))
-            System.out.println("✅ تسجيل دخول ناجح.");
-        else
-            System.out.println("❌ فشل تسجيل الدخول.");
+        boolean success = authService.login(
+                readText("Username: "),
+                readText("Password: ")
+        );
+        System.out.println(success ? "✅ Login successful." : "❌ Login failed.");
     }
 
     private static void handleRegister(UserRepository userRepo) {
-        String username = readText("اسم المستخدم الجديد: ");
-
-        if (username.contains(",") || username.contains(" ")) {
-            System.out.println("❌ اسم المستخدم يجب أن لا يحتوي فواصل أو مسافات.");
-            return;
+        try {
+            User user = new User(
+                    readText("Username: "),
+                    readDouble("Initial fine: ")
+            );
+            user.setEmail(readText("Email: "));
+            userRepo.save(user);
+            System.out.println("✅ User registered successfully.");
+        } catch (Exception e) {
+            System.out.println("❌ Failed to register user.");
         }
-
-        if (userRepo.findByUsername(username) != null) {
-            System.out.println("❌ المستخدم موجود مسبقًا.");
-            return;
-        }
-
-        double balance = readDouble("أدخل الغرامة الابتدائية (0 إذا لا يوجد): ");
-
-        User user = new User(username, balance);
-        userRepo.save(user);
-
-        System.out.println("✅ تم إنشاء المستخدم بنجاح.");
     }
 
-    // ======================= ADD MEDIA WITH COPIES =======================
-
     private static void handleAddMedia(MediaService mediaService) {
-        System.out.println("اختر النوع:");
-        System.out.println("1) كتاب");
-        System.out.println("2) CD");
+        try {
+            String type = readText("1) Book  2) CD : ");
+            String title = readText("Title: ");
+            int copies = readInt("Copies: ");
 
-        String type = readText("اختيار: ");
-        String title = readText("العنوان: ");
-        int copies = readInt("عدد النسخ: ");
-
-        switch (type) {
-            case "1":
-                String author = readText("المؤلف: ");
-                String isbn = readText("ISBN: ");
-                Media book = mediaService.addBook(title, author, isbn, copies);
-                System.out.println("✅ تمت إضافة كتاب: " + book);
-                break;
-
-            case "2":
-                String artist = readText("الفنان: ");
-                Media cd = mediaService.addCD(title, artist, copies);
-                System.out.println("✅ تمت إضافة CD: " + cd);
-                break;
-
-            default:
-                System.out.println("❌ خيار غير صحيح.");
+            if (type.equals("1")) {
+                mediaService.addBook(
+                        title,
+                        readText("Author: "),
+                        readText("ISBN: "),
+                        copies
+                );
+                System.out.println("✅ Book added successfully.");
+            } else if (type.equals("2")) {
+                mediaService.addCD(
+                        title,
+                        readText("Artist: "),
+                        copies
+                );
+                System.out.println("✅ CD added successfully.");
+            } else {
+                System.out.println("❌ Invalid media type.");
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Failed to add media.");
         }
     }
 
     private static void handleSearch(MediaService mediaService) {
-        String keyword = readText("أدخل كلمة للبحث: ");
-        List<Media> results = mediaService.searchByTitle(keyword);
-
-        if (results.isEmpty())
-            System.out.println("لا توجد نتائج.");
-        else
+        List<Media> results = mediaService.searchByTitle(readText("Search: "));
+        if (results.isEmpty()) {
+            System.out.println("❌ No results found.");
+        } else {
             results.forEach(System.out::println);
+        }
     }
 
     private static void handleBorrow(BorrowService borrowService, UserRepository userRepo) {
-        String username = readText("اسم المستخدم: ");
-        User user = userRepo.findByUsername(username);
-
-        if (user == null) {
-            System.out.println("❌ المستخدم غير موجود.");
-            return;
-        }
-
-        int id = readInt("ID العنصر: ");
-
         try {
-            borrowService.borrow(user, id, LocalDate.now());
-            System.out.println("✅ تمت عملية الاستعارة.");
+            User user = userRepo.findByUsername(readText("Username: "));
+            borrowService.borrow(user, readInt("Media ID: "), LocalDate.now());
+            System.out.println("✅ Borrow successful.");
         } catch (Exception e) {
-            System.out.println("❌ خطأ: " + e.getMessage());
+            System.out.println("❌ Borrow failed.");
         }
     }
 
     private static void handleReturn(BorrowService borrowService) {
-        String username = readText("اسم المستخدم: ");
-        int id = readInt("ID العنصر: ");
-
         try {
-            borrowService.returnItem(username, id, LocalDate.now());
-            System.out.println("✅ تمت عملية الإرجاع.");
+            borrowService.returnItem(
+                    readText("Username: "),
+                    readInt("Media ID: "),
+                    LocalDate.now()
+            );
+            System.out.println("✅ Return successful.");
         } catch (Exception e) {
-            System.out.println("❌ خطأ: " + e.getMessage());
+            System.out.println("❌ Return failed.");
         }
     }
 
     private static void handlePayFine(FineService fineService) {
-        String username = readText("اسم المستخدم: ");
-        double amount = readDouble("المبلغ: ");
-
-        if (fineService.payFine(username, amount))
-            System.out.println("✅ تم دفع الغرامة.");
-        else
-            System.out.println("❌ فشل دفع الغرامة.");
+        boolean success = fineService.payFine(
+                readText("Username: "),
+                readDouble("Amount: ")
+        );
+        System.out.println(success ? "✅ Fine paid successfully." : "❌ Fine payment failed.");
     }
 
     private static void handleUnregister(UserService userService, BorrowService borrowService) {
-        String adminName = readText("Admin username: ");
-        User admin = new User(adminName, 0);
-
-        String targetName = readText("User to unregister: ");
-        User target = new User(targetName, 0);
-
         try {
-            if (userService.unregister(admin, target, borrowService))
-                System.out.println("✅ تم حذف المستخدم.");
-            else
-                System.out.println("❌ لم يتم الحذف.");
+            userService.unregister(
+                    new User(readText("Admin: "), 0),
+                    new User(readText("User: "), 0),
+                    borrowService
+            );
+            System.out.println("✅ User unregistered successfully.");
         } catch (Exception e) {
-            System.out.println("❌ خطأ: " + e.getMessage());
+            System.out.println("❌ Cannot unregister user.");
         }
     }
 
-    private static void handleSendReminders(ReminderService reminderService) {
+    private static void handleSendReminders(ReminderService reminderService, EmailServer emailServer) {
         int count = reminderService.sendOverdueReminders(LocalDate.now());
-        System.out.println("✅ تم إرسال " + count + " رسائل تذكير.");
+
+        if (count == 0) {
+            emailServer.send(
+                    new com.library.model.EmailMessage(
+                            "saa123sud53@gmail.com",
+                            "No overdue items in the library."
+                    )
+            );
+            System.out.println("📧 No overdue items email sent.");
+        } else {
+            System.out.println("📧 Overdue reminder emails sent: " + count);
+        }
     }
 
     private static void handleViewBorrowed(BorrowService borrowService, UserRepository userRepo) {
-        String username = readText("اسم المستخدم: ");
-        User user = userRepo.findByUsername(username);
-
-        if (user == null) {
-            System.out.println("❌ المستخدم غير موجود.");
-            return;
-        }
-
-        List<?> records = borrowService.getBorrowRecordsForUser(user);
-
-        if (records.isEmpty()) {
-            System.out.println("لا توجد استعارات حالية.");
-        } else {
-            System.out.println("📌 استعارات المستخدم:");
-            records.forEach(System.out::println);
+        try {
+            User user = userRepo.findByUsername(readText("Username: "));
+            List<?> records = borrowService.getBorrowRecordsForUser(user);
+            if (records.isEmpty()) {
+                System.out.println("No borrowed items.");
+            } else {
+                records.forEach(System.out::println);
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Failed to load borrowed items.");
         }
     }
 }
+
