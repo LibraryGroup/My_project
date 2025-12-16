@@ -10,18 +10,12 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <!-- Java 21 -->
+        <!-- Java -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- SonarCloud -->
-        <sonar.organization>obadayasin</sonar.organization>
-        <sonar.projectKey>obadayasin_My_project</sonar.projectKey>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-
-        <!-- Versions -->
+        <!-- Test Versions -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <mockito.version>5.11.0</mockito.version>
     </properties>
@@ -52,24 +46,25 @@
         </dependency>
 
         <!-- Jakarta Mail -->
-      <dependency>
-    <groupId>com.sun.mail</groupId>
-    <artifactId>jakarta.mail</artifactId>
-    <version>2.0.1</version>
-</dependency>
-<dependency>
-    <groupId>com.twilio.sdk</groupId>
-    <artifactId>twilio</artifactId>
-    <version>9.12.0</version>
-</dependency>
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>jakarta.mail</artifactId>
+            <version>2.0.1</version>
+        </dependency>
 
+        <!-- Twilio -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>9.12.0</version>
+        </dependency>
 
     </dependencies>
 
     <build>
         <plugins>
 
-            <!-- JUnit 5 (Surefire) -->
+            <!-- Surefire (JUnit 5) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -79,43 +74,39 @@
                 </configuration>
             </plugin>
 
-            <!-- Jacoco Plugin -->
+            <!-- JaCoCo -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.11</version>
 
                 <executions>
-
-                    <!-- Inject Agent -->
+                    <!-- attach agent -->
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
 
-                    <!-- Generate Coverage Report -->
+                    <!-- generate report during test -->
                     <execution>
                         <id>jacoco-report</id>
-                        <phase>verify</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
                     </execution>
-
                 </executions>
 
                 <configuration>
+                    <!-- نستثني فقط console -->
                     <excludes>
-                        <exclude>**/model/**</exclude>
-                        <exclude>**/repository/**</exclude>
                         <exclude>**/console/**</exclude>
                     </excludes>
                 </configuration>
-
             </plugin>
 
-            <!-- SonarCloud Scanner -->
+            <!-- Sonar Scanner -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
@@ -126,4 +117,5 @@
     </build>
 
 </project>
+
 
