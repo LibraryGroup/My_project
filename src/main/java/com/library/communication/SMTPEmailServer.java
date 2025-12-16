@@ -1,26 +1,26 @@
 package com.library.communication;
 
 import com.library.model.EmailMessage;
-
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
+import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SMTPEmailServer implements EmailServer {
+
+    private static final Logger LOGGER =
+            Logger.getLogger(SMTPEmailServer.class.getName());
 
     private final String smtpHost;
     private final int smtpPort;
     private final String username;
     private final String password;
 
-    public SMTPEmailServer(String smtpHost, int smtpPort, String username, String password) {
+    public SMTPEmailServer(String smtpHost, int smtpPort,
+                           String username, String password) {
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;
         this.username = username;
@@ -46,18 +46,20 @@ public class SMTPEmailServer implements EmailServer {
         try {
             Message mimeMessage = new MimeMessage(session);
             mimeMessage.setFrom(new InternetAddress(username));
-            mimeMessage.setRecipients(Message.RecipientType.TO,
-                    InternetAddress.parse(message.getTo()));
+            mimeMessage.setRecipients(
+                    Message.RecipientType.TO,
+                    InternetAddress.parse(message.getTo())
+            );
             mimeMessage.setSubject("Library Reminder");
             mimeMessage.setText(message.getContent());
 
             Transport.send(mimeMessage);
-            System.out.println("Email sent successfully!");
+
+            LOGGER.info("Email sent successfully to " + message.getTo());
+
         } catch (MessagingException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE,
+                    "Failed to send email to " + message.getTo(), e);
         }
     }
-}//ss
-
-
-//ssdadad
+}
